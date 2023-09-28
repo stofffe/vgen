@@ -7,28 +7,27 @@ import (
 
 // vgen:"i"
 type Person struct {
-	Name  string // vgen:[ req, len>0 ]
-	Age   int    // invalidvgen
-	Vibes bool   // vgen:[]
+	Name  string // vgen:"req, len>0"
+	Age   int    // vgen:"val>=3, gt(4), email"
+	Vibes bool   // vgen:"req"
 }
 
 // vgen:[ val<=100, val>=0 ]
-// vgen:"i"
 type Person2 struct {
-	Name  string `vgen:[ req, len>0 ]`
-	Age   int    `vgen:[ val<=100, val>=0 ]`
-	Vibes bool   `vgen:[ req ]`
+	Name  string // vgen:"req, len_gt(0), len_lt(5)"
+	Age   int
+	Vibes bool
 }
 
 // Person ouput
 
-type PersonVgen struct {
+type PersonV struct {
 	Name  *string
 	Age   *int
 	Vibes *bool
 }
 
-func (t PersonVgen) Validate() (Person, error) {
+func (t PersonV) Validate() (Person, error) {
 	errs := make(map[string]string)
 
 	if t.Name != nil {
