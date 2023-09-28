@@ -23,8 +23,13 @@ type StructType struct {
 type Field struct {
 	Name     string
 	Type     string
-	Rules    []string
+	Rules    []Rule
 	Required bool
+}
+
+type Rule struct {
+	Func  string
+	Value string
 }
 
 func parseFile(path string) (ParseInfo, error) {
@@ -36,10 +41,10 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, fmt.Errorf("could not parse file: %v", err)
 	}
 
-	err = ast.Print(fset, file)
-	if err != nil {
-		return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
-	}
+	// err = ast.Print(fset, file)
+	// if err != nil {
+	// 	return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
+	// }
 
 	// parse
 	var structs []StructType
@@ -50,7 +55,7 @@ func parseFile(path string) (ParseInfo, error) {
 				fmt.Printf("could not parse gen decl: %v\n", err)
 			}
 			for _, s := range parsed_structs {
-				fmt.Println(s)
+				// fmt.Println(s)
 				structs = append(structs, s)
 			}
 		}
@@ -149,14 +154,12 @@ func parseField(node *ast.Field) (Field, error) {
 	name := node.Names[0].Name
 
 	// extract rules from comment
-	var rules []string
+	var comment string
 	if node.Comment != nil {
 		if len(node.Comment.List) > 1 {
 			log.Fatalf("HOW CAN THIS BE > 1?")
 		}
-
-		comment := node.Comment.List[0].Text
-		rules = extractRules(comment)
+		comment = node.Comment.List[0].Text
 	}
 
 	// parse
@@ -164,7 +167,7 @@ func parseField(node *ast.Field) (Field, error) {
 	if !ok {
 		return Field{}, fmt.Errorf("must be primitive value")
 	}
-	field, err := parseFieldPrimitive(prim, name, rules)
+	field, err := parseFieldPrimitive(prim, name, comment)
 	if err != nil {
 		return Field{}, fmt.Errorf("could not parse field primtive: %v", err)
 	}
@@ -172,17 +175,23 @@ func parseField(node *ast.Field) (Field, error) {
 	return field, nil
 }
 
-func parseFieldPrimitive(node *ast.Ident, field_name string, rules []string) (Field, error) {
-	typ := node.Name
+func parseFieldPrimitive(node *ast.Ident, field_name string, comment string) (Field, error) {
+	rules_str := extractRules(comment)
 
 	req := false
-	for _, rule := range rules {
+	for _, rule := range rules_str {
 		if rule == "req" {
 			req = true
 			break
 		}
 	}
 
+	rules, err := parseRules(rules_str)
+	if err != nil {
+		return Field{}, fmt.Errorf("could not parse rules: %v", err)
+	}
+
+	typ := node.Name
 	return Field{
 		Name:     field_name,
 		Type:     typ,
@@ -191,9 +200,14 @@ func parseFieldPrimitive(node *ast.Ident, field_name string, rules []string) (Fi
 	}, nil
 }
 
+var extractRulesRegex = createExtractRulesRegex()
+
+func createExtractRulesRegex() *regexp.Regexp {
+	return regexp.MustCompile(`vgen:\"(.*)\"`)
+}
+
 func extractRules(value string) []string {
-	reg := regexp.MustCompile(`vgen:\"(.*)\"`)
-	matches := reg.FindStringSubmatch(value)
+	matches := extractRulesRegex.FindStringSubmatch(value)
 
 	if len(matches) == 0 {
 		return []string{}
@@ -204,4 +218,57 @@ func extractRules(value string) []string {
 	split := strings.Split(rules, ",")
 
 	return split
+}
+
+var parseRulesRegex = createParseRulesRegex()
+
+func createParseRulesRegex() *regexp.Regexp {
+	req := `(req)()`
+	len_gt := `(len>)(\d+)`
+	len_lt := `(len<)(\d+)`
+	len_gte := `(len>=)(\d+)`
+	len_lte := `(len<=)(\d+)`
+	val_gt := `(val>)(\d+)`
+	val_lt := `(val<)(\d+)`
+	val_gte := `(val>=)(\d+)`
+	val_lte := `(val<=)(\d+)`
+
+	pattern := req + "|" +
+		len_gt + "|" + len_lt + "|" + len_gte + "|" + len_lte +
+		val_gt + "|" + val_lt + "|" + val_gte + "|" + val_lte
+
+	return regexp.MustCompile(pattern)
+}
+
+func parseRules(rules_str []string) ([]Rule, error) {
+	var rules []Rule
+
+	for _, rule := range rules_str {
+		matches := parseRulesRegex.FindStringSubmatch(rule)
+
+		if len(matches) == 0 {
+			return []Rule{}, fmt.Errorf("invalid rule: %v", rule)
+		}
+
+		var filtered []string
+		for i, v := range matches {
+			if i != 0 && v != "" {
+				filtered = append(filtered, v)
+			}
+		}
+
+		f := filtered[0]
+		v := ""
+		if len(filtered) > 1 {
+			v = filtered[1]
+		}
+
+		rules = append(rules, Rule{
+			Func:  f,
+			Value: v,
+		})
+	}
+
+	return rules, nil
+
 }

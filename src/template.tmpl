@@ -24,7 +24,7 @@ func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
         if t.{{ .Name }} != nil {
             {{ lowerFirstFunc .Name }} := *t.{{ .Name }}
             {{- range .Rules }}
-                {{ RuleFunc . -}}
+                {{ ruleFunc . -}}
             {{ end }}
             res.{{ .Name }} = {{ lowerFirstFunc .Name }}
         }  {{ if .Required }} else {

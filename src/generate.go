@@ -12,9 +12,12 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	var buffer bytes.Buffer
 
 	func_map := template.FuncMap{
-		"RuleFunc":       ruleFunc,
+		"ruleFunc":       ruleFunc,
 		"lowerFirstFunc": lowerFirstFunc,
 	}
+
+	// TODO
+	// Check rules match type
 
 	// parse template
 	tmpl, err := template.New("template").Funcs(func_map).ParseFiles("src/template.tmpl")
@@ -54,18 +57,19 @@ func generateFile(info ParseInfo) ([]byte, error) {
 }
 
 // TODO temp
-func ruleFunc(rule string) string {
-	if rule == "req" {
-		return ""
-	}
-	if rule == "len>0" {
-		return `
-		if !(len(name) > 0) {
-			errs[""] = fmt.Sprintf("len must be > 0")
-		}`
+func ruleFunc(rule Rule) (string, error) {
+	tmpl, err := template.ParseFiles("src/rules.tmpl")
+	if err != nil {
+		return "", fmt.Errorf("could not parse rules template file: %v", err)
 	}
 
-	return "// Rule not implemented for " + rule
+	var buffer bytes.Buffer
+	err = tmpl.ExecuteTemplate(&buffer, rule.Func, rule.Value)
+	if err != nil {
+		return "", fmt.Errorf("could not execute rules template file: %v", err)
+	}
+
+	return buffer.String(), nil
 }
 
 func lowerFirstFunc(str string) string {

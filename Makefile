@@ -1,5 +1,5 @@
 run:
-	go run src/*.go
+	@go run src/*.go
 
 test:
-	go run tests/test.go
+	@go run tests/test.go

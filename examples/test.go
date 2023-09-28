@@ -8,7 +8,7 @@ import (
 // vgen:"i"
 type Person struct {
 	Name  string // vgen:"req, len>0"
-	Age   int    // vgen:"val>=3, gt(4), email"
+	Age   int    // vgen:"val>=3"
 	Vibes bool   // vgen:"req"
 }
 

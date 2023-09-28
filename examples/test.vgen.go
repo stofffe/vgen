@@ -18,9 +18,10 @@ func (t PersonVgen) Validate() (Person, error) {
 	if t.Name != nil {
 		name := *t.Name
 
-		if !(len(name) > 0) {
-			errs[""] = fmt.Sprintf("len must be > 0")
-		}
+		// req
+
+		// len > 0
+
 		res.Name = name
 	} else {
 		errs["Name"] = fmt.Sprintf("required")
@@ -29,15 +30,17 @@ func (t PersonVgen) Validate() (Person, error) {
 	// Age int
 	if t.Age != nil {
 		age := *t.Age
-		// Rule not implemented for val>=3
-		// Rule not implemented for gt(4)
-		// Rule not implemented for email
+
+		// val >= 3
+
 		res.Age = age
 	}
 
 	// Vibes bool
 	if t.Vibes != nil {
 		vibes := *t.Vibes
+
+		// req
 
 		res.Vibes = vibes
 	} else {
