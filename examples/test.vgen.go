@@ -1,3 +1,6 @@
+// THIS FILE IS GENERATED FROM VGEN
+// DO NOT EDIT
+
 package examples
 
 import (
@@ -18,9 +21,13 @@ func (t PersonVgen) Validate() (Person, error) {
 	if t.Name != nil {
 		name := *t.Name
 
-		// req
+		if !(len(name) > 0) {
+			errs["name"] = fmt.Sprintf(`can not be empty`)
+		}
 
-		// len > 0
+		if !(len(name) > 20) {
+			errs["name"] = fmt.Sprintf(`len must be > 20`)
+		}
 
 		res.Name = name
 	} else {
@@ -31,16 +38,18 @@ func (t PersonVgen) Validate() (Person, error) {
 	if t.Age != nil {
 		age := *t.Age
 
-		// val >= 3
+		if !(age >= 18) {
+			errs["age"] = fmt.Sprintf(`must be >= 18`)
+		}
 
 		res.Age = age
+	} else {
+		errs["Age"] = fmt.Sprintf("required")
 	}
 
 	// Vibes bool
 	if t.Vibes != nil {
 		vibes := *t.Vibes
-
-		// req
 
 		res.Vibes = vibes
 	} else {

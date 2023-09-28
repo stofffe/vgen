@@ -28,8 +28,9 @@ type Field struct {
 }
 
 type Rule struct {
-	Func  string
-	Value string
+	FieldName string
+	Func      string
+	Value     string
 }
 
 func parseFile(path string) (ParseInfo, error) {
@@ -41,18 +42,15 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, fmt.Errorf("could not parse file: %v", err)
 	}
 
-	// err = ast.Print(fset, file)
-	// if err != nil {
-	// 	return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
-	// }
-
 	// parse
+	var file_err error
 	var structs []StructType
 	ast.Inspect(file, func(n ast.Node) bool {
 		if node, ok := n.(*ast.GenDecl); ok {
 			parsed_structs, err := parseGenDecl(node)
 			if err != nil {
-				fmt.Printf("could not parse gen decl: %v\n", err)
+				file_err = fmt.Errorf("could not parse gen decl: %v\n", err)
+				return false
 			}
 			for _, s := range parsed_structs {
 				// fmt.Println(s)
@@ -62,6 +60,9 @@ func parseFile(path string) (ParseInfo, error) {
 
 		return true
 	})
+	if file_err != nil {
+		return ParseInfo{}, file_err
+	}
 
 	// package
 	package_name := file.Name.Name
@@ -70,9 +71,14 @@ func parseFile(path string) (ParseInfo, error) {
 		Package: package_name,
 		Structs: structs,
 	}, nil
+
+	// err = ast.Print(fset, file)
+	// if err != nil {
+	// 	return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
+	// }
 }
 
-const INCLUDE_TAG = `vgen:"i"`
+const INCLUDE_TAG = `i`
 
 func parseGenDecl(node *ast.GenDecl) ([]StructType, error) {
 	// check for tag
@@ -81,9 +87,11 @@ func parseGenDecl(node *ast.GenDecl) ([]StructType, error) {
 	}
 	hasTag := false
 	for _, comment := range node.Doc.List {
-		if strings.Contains(comment.Text, INCLUDE_TAG) {
-			hasTag = true
-			break
+		rules := extractRules(comment.Text)
+		for _, rule := range rules {
+			if rule == "i" {
+				hasTag = true
+			}
 		}
 	}
 	if !hasTag {
@@ -186,7 +194,7 @@ func parseFieldPrimitive(node *ast.Ident, field_name string, comment string) (Fi
 		}
 	}
 
-	rules, err := parseRules(rules_str)
+	rules, err := parseRules(rules_str, field_name)
 	if err != nil {
 		return Field{}, fmt.Errorf("could not parse rules: %v", err)
 	}
@@ -203,7 +211,7 @@ func parseFieldPrimitive(node *ast.Ident, field_name string, comment string) (Fi
 var extractRulesRegex = createExtractRulesRegex()
 
 func createExtractRulesRegex() *regexp.Regexp {
-	return regexp.MustCompile(`vgen:\"(.*)\"`)
+	return regexp.MustCompile(`vgen:\[(.*)\]`)
 }
 
 func extractRules(value string) []string {
@@ -223,24 +231,24 @@ func extractRules(value string) []string {
 var parseRulesRegex = createParseRulesRegex()
 
 func createParseRulesRegex() *regexp.Regexp {
-	req := `(req)()`
-	len_gt := `(len>)(\d+)`
-	len_lt := `(len<)(\d+)`
-	len_gte := `(len>=)(\d+)`
-	len_lte := `(len<=)(\d+)`
-	val_gt := `(val>)(\d+)`
-	val_lt := `(val<)(\d+)`
-	val_gte := `(val>=)(\d+)`
-	val_lte := `(val<=)(\d+)`
+	req := `^(req)$`                 // all
+	len_gt := `^(len_gt)\((.+)\)$`   // string, list, map
+	len_lt := `^(len_lt)\((.+)\)$`   // string, list, map
+	len_gte := `^(len_gte)\((.+)\)$` // string, list, map
+	len_lte := `^(len_lte)\((.+)\)$` // string, list, map
+	not_empty := `^(not_empty)$`     // string, list, map
+	gt := `^(gt)\((.+)\)$`           // string, int, float
+	lt := `^(lt)\((.+)\)$`           // string, int, float
+	gte := `^(gte)\((.+)\)$`         // string, int, float
+	lte := `^(lte)\((.+)\)$`         // string, int, float
 
-	pattern := req + "|" +
-		len_gt + "|" + len_lt + "|" + len_gte + "|" + len_lte +
-		val_gt + "|" + val_lt + "|" + val_gte + "|" + val_lte
+	rules := []string{req, len_gt, len_lt, len_gte, len_lte, not_empty, gt, lt, gte, lte}
+	pattern := strings.Join(rules, "|")
 
 	return regexp.MustCompile(pattern)
 }
 
-func parseRules(rules_str []string) ([]Rule, error) {
+func parseRules(rules_str []string, name string) ([]Rule, error) {
 	var rules []Rule
 
 	for _, rule := range rules_str {
@@ -263,9 +271,11 @@ func parseRules(rules_str []string) ([]Rule, error) {
 			v = filtered[1]
 		}
 
+		// TODO add custom fieldname if json:"" supplied?
 		rules = append(rules, Rule{
-			Func:  f,
-			Value: v,
+			FieldName: name,
+			Func:      f,
+			Value:     v,
 		})
 	}
 

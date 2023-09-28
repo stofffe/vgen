@@ -16,9 +16,6 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		"lowerFirstFunc": lowerFirstFunc,
 	}
 
-	// TODO
-	// Check rules match type
-
 	// parse template
 	tmpl, err := template.New("template").Funcs(func_map).ParseFiles("src/template.tmpl")
 	// tmpl, err := template.ParseFiles("src/template.tmpl")
@@ -56,15 +53,19 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	return bytes, nil
 }
 
-// TODO temp
+// TODO SLOW reuse template?
 func ruleFunc(rule Rule) (string, error) {
-	tmpl, err := template.ParseFiles("src/rules.tmpl")
+	func_map := template.FuncMap{
+		"lowerFirstFunc": lowerFirstFunc,
+	}
+
+	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles("src/rules.tmpl")
 	if err != nil {
 		return "", fmt.Errorf("could not parse rules template file: %v", err)
 	}
 
 	var buffer bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buffer, rule.Func, rule.Value)
+	err = tmpl.ExecuteTemplate(&buffer, rule.Func, rule)
 	if err != nil {
 		return "", fmt.Errorf("could not execute rules template file: %v", err)
 	}
