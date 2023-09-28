@@ -1,5 +1,5 @@
-run:
-	@go run src/*.go
+build:
+	@go build -o bin/vgen src/*.go
 
 test:
-	@go run tests/test.go
+	@go run examples/test/run/main.go

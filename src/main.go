@@ -9,7 +9,11 @@ import (
 )
 
 func main() {
-	file_path := "examples/test.go"
+	if len(os.Args) < 2 {
+		log.Fatal("must supply file path")
+	}
+
+	file_path := os.Args[1]
 
 	// parse
 	info, err := parseFile(file_path)

@@ -1,17 +1,15 @@
 package main
 
-// package main
-
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 
-	"github.com/stofffe/vgen/examples"
+	"github.com/stofffe/vgen/examples/test"
 )
 
 func main() {
-	person, err := examples.PersonVgen{
+	person, err := test.PersonVgen{
 		Name:  P("helo"),
 		Age:   P(17),
 		Vibes: nil,
