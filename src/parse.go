@@ -241,8 +241,9 @@ func createParseRulesRegex() *regexp.Regexp {
 	lt := `^(lt)\((.+)\)$`           // string, int, float
 	gte := `^(gte)\((.+)\)$`         // string, int, float
 	lte := `^(lte)\((.+)\)$`         // string, int, float
+	custom := `^(custom)\((.+)\)$`   // all
 
-	rules := []string{req, len_gt, len_lt, len_gte, len_lte, not_empty, gt, lt, gte, lte}
+	rules := []string{req, len_gt, len_lt, len_gte, len_lte, not_empty, gt, lt, gte, lte, custom}
 	pattern := strings.Join(rules, "|")
 
 	return regexp.MustCompile(pattern)

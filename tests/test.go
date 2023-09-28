@@ -3,6 +3,7 @@ package main
 // package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -10,13 +11,13 @@ import (
 )
 
 func main() {
-
 	person, err := examples.PersonVgen{
-		Name:  P(""),
-		Age:   P(123),
+		Name:  P("helo"),
+		Age:   P(17),
 		Vibes: nil,
 	}.Validate()
 	if err != nil {
+		PrettyPrintJson("err", err.Error())
 		log.Fatalf("failed to validate person: %v", err)
 	}
 	fmt.Printf("person: %v\n", person)
@@ -24,6 +25,23 @@ func main() {
 
 func P[T any](t T) *T {
 	return &t
+}
+func PrettyPrintJson(name string, val string) {
+	var unmarshalled any
+	err := json.Unmarshal([]byte(val), &unmarshalled)
+	if err != nil {
+		log.Fatalf("could not unmarshal: %v", val)
+	}
+	j, err := json.MarshalIndent(unmarshalled, "", "  ")
+	if err != nil {
+		log.Fatalf("could not pretty print: %v", err)
+	}
+	fmt.Printf(`
+----------------------------------
+Pretty print %s
+%s
+----------------------------------
+`, name, string(j))
 }
 
 // package main

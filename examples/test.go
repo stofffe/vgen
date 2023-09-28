@@ -7,9 +7,10 @@ import (
 
 // vgen:[i]
 type Person struct {
-	Name  string // vgen:[ req, not_empty, len_gt(20) ]
-	Age   int    // vgen:[ req, gte(18) ]
+	Name  string // vgen:[ req, not_empty, len_lt(20), custom(isBob) ]
+	Age   int    // vgen:[ req, gte(18), custom(driveAge) ]
 	Vibes bool   // vgen:[ req ]
+	//Nicknames []string // vgen:[ not_empty ]
 }
 
 // vgen:[ val<=100, val>=0 ]
@@ -17,6 +18,20 @@ type Person2 struct {
 	Name  string // vgen:"req, len_gt(0), len_lt(5)"
 	Age   int
 	Vibes bool
+}
+
+func driveAge(t int) error {
+	if t < 18 {
+		return fmt.Errorf("must be at least 18")
+	}
+	return nil
+}
+
+func isBob(t string) error {
+	if t != "Bob" {
+		return fmt.Errorf("must be Bob")
+	}
+	return nil
 }
 
 // Person ouput

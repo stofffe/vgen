@@ -20,7 +20,7 @@ type {{ .Name }}Vgen struct {
 {{ define "struct_validation" }}
 func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
     res := {{ .Name }}{}
-    errs := make(map[string]string)
+    errs := make(map[string][]string)
 
     {{- range .Fields }}
         // {{ .Name }} {{ .Type }}
@@ -31,7 +31,7 @@ func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
             {{ end }}
             res.{{ .Name }} = {{ lowerFirstFunc .Name }}
         }  {{ if .Required }} else {
-                errs["{{ .Name }}"] = fmt.Sprintf("required")
+                errs["{{ lowerFirstFunc .Name }}"] = append(errs["{{ lowerFirstFunc .Name }}"], fmt.Sprintf("required"))
         } {{- end }}
     {{ end }}
 
