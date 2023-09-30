@@ -1,7 +1,9 @@
-package test
+package main
 
 import (
 	"fmt"
+
+	"github.com/stofffe/vgen/util"
 )
 
 // vgen:[i]
@@ -35,4 +37,18 @@ func isBob(t string) error {
 		return fmt.Errorf("must be Bob")
 	}
 	return nil
+}
+
+func main() {
+	person, err := PersonVgen{
+		Name:      util.InitP("helo"),
+		Age:       util.InitP(17),
+		Vibes:     nil,
+		Nicknames: util.InitP([]string{"hello", "yoyo", "abc", "noooooooooooooooooo"}),
+	}.Validate()
+	if err != nil {
+		util.DebugPrint("err", err.Error())
+	} else {
+		fmt.Printf("person: %v\n", person)
+	}
 }

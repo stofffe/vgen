@@ -28,11 +28,7 @@ func (t PersonVgen) Validate() (Person, error) {
 		}
 
 		if !(len(name) < 20) {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`len must be less than 20`))
-		}
-
-		if err := isBob(name); err != nil {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`failed custom isBob: %v`, err))
+			errs["name"] = append(errs["name"], fmt.Sprintf(`len must be < 20`))
 		}
 
 		res.Name = name
@@ -44,11 +40,7 @@ func (t PersonVgen) Validate() (Person, error) {
 		age := *t.Age
 
 		if !(age >= 18) {
-			errs["age"] = append(errs["age"], fmt.Sprintf(`must be greater than or equal to 18`))
-		}
-
-		if err := driveAge(age); err != nil {
-			errs["age"] = append(errs["age"], fmt.Sprintf(`failed custom driveAge: %v`, err))
+			errs["age"] = append(errs["age"], fmt.Sprintf(`must be >= 18`))
 		}
 
 		res.Age = age
@@ -68,17 +60,13 @@ func (t PersonVgen) Validate() (Person, error) {
 		nicknames := *t.Nicknames
 
 		if !(len(nicknames) > 3) {
-			errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`len must be greater than 3`))
-		}
-
-		if err := totLen(nicknames); err != nil {
-			errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`failed custom totLen: %v`, err))
+			errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`len must be > 3`))
 		}
 
 		for i, nicknames := range nicknames {
 
 			if !(len(nicknames) >= 4) {
-				errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(strconv.Itoa(i)+":"+`len must be greater than or equal to 4`))
+				errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(strconv.Itoa(i)+":"+`len must be >= 4`))
 			}
 
 		}

@@ -8,27 +8,27 @@ import (
 	"log"
 	"regexp"
 	"strings"
+
+	"github.com/stofffe/vgen/util"
 )
 
 type ParseInfo struct {
 	Package string
-	Structs []Type
+	Types   []Type
 }
 
 // types
 type Type interface {
 	isType()
 }
-type InvalidType struct{}
-
-func (t InvalidType) isType() {}
-
 type StructType struct {
 	Name   string
 	Fields []Field
 }
+type InvalidType struct{}
 
-func (t StructType) isType() {}
+func (t StructType) isType()  {}
+func (t InvalidType) isType() {}
 
 // field
 type Field interface {
@@ -40,9 +40,6 @@ type PrimitiveField struct {
 	Rules    []Rule
 	Required bool
 }
-
-func (f PrimitiveField) isField() {}
-
 type ListField struct {
 	Name       string
 	Typ        string
@@ -50,26 +47,34 @@ type ListField struct {
 	ValueRules []Rule
 	Required   bool
 }
-
-func (f ListField) isField() {}
-
 type InvalidField struct{}
 
-func (f InvalidField) isField() {}
+func (f PrimitiveField) isField() {}
+func (f ListField) isField()      {}
+func (f InvalidField) isField()   {}
 
 // rule
 type Rule interface {
 	isRule()
 }
-
 type PrimitiveRule struct {
-	FieldName    string
-	Func         string
-	Value        string
-	IncludeIndex bool
+	FieldName string
+	Func      string
+	Value     string
 }
+type ListRule struct {
+	FieldName string
+	Func      string
+	Value     string
+}
+type InvalidRule struct{}
+
+func (t ListRule) isRule() {}
 
 func (t PrimitiveRule) isRule() {}
+
+func (t InvalidRule) isRule()        {}
+func (t InvalidRule) String() string { return "" }
 
 func parseFile(path string) (ParseInfo, error) {
 	// load file
@@ -87,17 +92,16 @@ func parseFile(path string) (ParseInfo, error) {
 
 	// parse
 	var file_err error
-	var structs []Type
+	var types []Type
 	ast.Inspect(file, func(n ast.Node) bool {
 		if node, ok := n.(*ast.GenDecl); ok {
-			parsed_structs, err := parseGenDecl(node)
+			parsed_types, err := parseGenDecl(node)
 			if err != nil {
 				file_err = fmt.Errorf("could not parse gen decl: %v\n", err)
 				return false
 			}
-			for _, s := range parsed_structs {
-				// fmt.Println(s)
-				structs = append(structs, s)
+			for _, s := range parsed_types {
+				types = append(types, s)
 			}
 		}
 
@@ -112,7 +116,7 @@ func parseFile(path string) (ParseInfo, error) {
 
 	return ParseInfo{
 		Package: package_name,
-		Structs: structs,
+		Types:   types,
 	}, nil
 
 }
@@ -127,11 +131,10 @@ func parseGenDecl(node *ast.GenDecl) ([]Type, error) {
 	hasTag := false
 	for _, comment := range node.Doc.List {
 		rules := extractRules(comment.Text)
-		for _, rule := range rules {
-			if rule == "i" {
-				hasTag = true
-			}
+		if util.ListContains(rules, INCLUDE_TAG) {
+			hasTag = true
 		}
+
 	}
 	if !hasTag {
 		return []Type{}, nil
@@ -260,7 +263,8 @@ func parseListField(node *ast.ArrayType, field_name, comment string) (Field, err
 
 		// check rule
 		if []rune(rule)[0] == ':' {
-			value_rules_str = append(value_rules_str, rule[1:])
+			// value_rules_str = append(value_rules_str, rule[1:])
+			value_rules_str = append(value_rules_str, rule)
 		} else {
 			list_rules_str = append(list_rules_str, rule)
 		}
@@ -270,7 +274,7 @@ func parseListField(node *ast.ArrayType, field_name, comment string) (Field, err
 	if err != nil {
 		return InvalidField{}, fmt.Errorf("could not parse list rules: %v", err)
 	}
-	value_rules, err := parseRules(value_rules_str, field_name, true)
+	value_rules, err := parseListRules(value_rules_str, field_name, true)
 	if err != nil {
 		return InvalidField{}, fmt.Errorf("could not parse value rules: %v", err)
 	}
@@ -343,7 +347,22 @@ func createParseRulesRegex() *regexp.Regexp {
 	lte := `^(lte)\((.+)\)$`         // string, int, float
 	custom := `^(custom)\((.+)\)$`   // all
 
-	rules := []string{req, len_gt, len_lt, len_gte, len_lte, not_empty, gt, lt, gte, lte, custom}
+	list_req := `^(:req)$`                 // all
+	list_len_gt := `^(:len_gt)\((.+)\)$`   // string, list, map
+	list_len_lt := `^(:len_lt)\((.+)\)$`   // string, list, map
+	list_len_gte := `^(:len_gte)\((.+)\)$` // string, list, map
+	list_len_lte := `^(:len_lte)\((.+)\)$` // string, list, map
+	list_not_empty := `^(:not_empty)$`     // string, list, map
+	list_gt := `^(:gt)\((.+)\)$`           // string, int, float
+	list_lt := `^(:lt)\((.+)\)$`           // string, int, float
+	list_gte := `^(:gte)\((.+)\)$`         // string, int, float
+	list_lte := `^(:lte)\((.+)\)$`         // string, int, float
+	list_custom := `^(:custom)\((.+)\)$`   // all
+
+	rules := []string{
+		req, len_gt, len_lt, len_gte, len_lte, not_empty, gt, lt, gte, lte, custom,
+		list_req, list_len_gt, list_len_lt, list_len_gte, list_len_lte, list_not_empty, list_gt, list_lt, list_gte, list_lte, list_custom,
+	}
 	pattern := strings.Join(rules, "|")
 
 	return regexp.MustCompile(pattern)
@@ -375,10 +394,47 @@ func parseRules(rules_str []string, name string, include_index bool) ([]Rule, er
 
 		// TODO add custom fieldname if json:"" supplied?
 		rules = append(rules, PrimitiveRule{
-			FieldName:    name,
-			Func:         f,
-			Value:        v,
-			IncludeIndex: include_index,
+			FieldName: name,
+			Func:      f,
+			Value:     v,
+			// IncludeIndex: include_index,
+		})
+	}
+
+	return rules, nil
+
+}
+
+// TODO this is copy pasted
+func parseListRules(rules_str []string, name string, include_index bool) ([]Rule, error) {
+	var rules []Rule
+
+	for _, rule := range rules_str {
+		matches := parseRulesRegex.FindStringSubmatch(rule)
+
+		if len(matches) == 0 {
+			return []Rule{}, fmt.Errorf("invalid rule: %v", rule)
+		}
+
+		var filtered []string
+		for i, v := range matches {
+			if i != 0 && v != "" {
+				filtered = append(filtered, v)
+			}
+		}
+
+		// extract func and parameter (if exists)
+		f := filtered[0]
+		v := ""
+		if len(filtered) > 1 {
+			v = filtered[1]
+		}
+
+		// TODO add custom fieldname if json:"" supplied?
+		rules = append(rules, ListRule{
+			FieldName: name,
+			Func:      f,
+			Value:     v,
 		})
 	}
 

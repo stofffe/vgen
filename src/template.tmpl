@@ -28,7 +28,7 @@ func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
         if t.{{ .Name }} != nil {
             {{ lowerFirstFunc .Name }} := *t.{{ .Name }}
 
-            {{ .RulesCode }}
+            {{ .FieldValidationCode }}
 
             res.{{ .Name }} = {{ lowerFirstFunc .Name }}
         }  {{ if .Required }} else {
@@ -47,18 +47,18 @@ func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
 
 {{ define "primitive_field_validation"}}
    {{ range .Rules }} 
-        {{ tmpl .Func . }}
+        {{ .RuleValidationCode }}
    {{ end }}
 {{ end }}
 
 {{ define "list_field_validation"}}
     {{ range .ListRules }} 
-        {{ tmpl .Func . }}
+        {{ .RuleValidationCode }}
     {{ end }}
 
     for i, {{ lowerFirstFunc .Name }} := range {{ lowerFirstFunc .Name }} {
         {{ range .ValueRules }} 
-            {{ tmpl .Func . }}
+            {{ .RuleValidationCode }}
         {{ end }}
     }
 {{ end }}

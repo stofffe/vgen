@@ -14,7 +14,7 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	func_map := template.FuncMap{
 		// "ruleFunc":       ruleFunc,
 		"lowerFirstFunc": lowerFirstFunc,
-		"tmpl":           Tmpl,
+		"tmplFunc":       ExecuteTmpl,
 	}
 
 	// parse template
@@ -31,7 +31,7 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	}
 
 	// structs
-	for _, s := range info.Structs {
+	for _, s := range info.Types {
 		// type
 		err := tmpl.ExecuteTemplate(&buffer, "struct_type", s)
 		if err != nil {
@@ -45,6 +45,7 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		}
 	}
 
+	// debug
 	// return buffer.Bytes(), nil
 
 	// fmt
@@ -56,60 +57,28 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	return bytes, nil
 }
 
-func (f ListField) RulesCode() (string, error) {
-	func_map := template.FuncMap{
-		"lowerFirstFunc": lowerFirstFunc,
-		"tmpl":           Tmpl,
-	}
-
-	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles("src/template.tmpl")
-	if err != nil {
-		return "", fmt.Errorf("could not parse rules template file: %v", err)
-	}
-
-	var buffer bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buffer, "list_field_validation", f)
-	if err != nil {
-		return "", fmt.Errorf("could not execute rules template file: %v", err)
-	}
-
-	return buffer.String(), nil
-
-}
-
-func (f PrimitiveField) RulesCode() (string, error) {
-	func_map := template.FuncMap{
-		"lowerFirstFunc": lowerFirstFunc,
-		"tmpl":           Tmpl,
-	}
-
-	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles("src/template.tmpl")
-	if err != nil {
-		return "", fmt.Errorf("could not parse rules template file: %v", err)
-	}
-
-	var buffer bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buffer, "primitive_field_validation", f)
-	if err != nil {
-		return "", fmt.Errorf("could not execute rules template file: %v", err)
-	}
-
-	return buffer.String(), nil
-}
-
 // TODO SLOW reuse template?
 // func (rule Rule) RulesCodePrefix(prefix string) (string, error) {
 // 	rule.ErrorPrefix = prefix
 // 	return rule.RulesCode()
 // }
 
-func Tmpl(name string, data any) (string, error) {
+func lowerFirstFunc(str string) string {
+	if str == "" {
+		return str
+	}
+	firstchar := []rune(str)[0]
+	firstchar = unicode.ToLower(firstchar)
+	return string(firstchar) + str[1:]
+}
+
+func ExecuteTmpl(tmpl_name, name string, data any) (string, error) {
 	func_map := template.FuncMap{
 		"lowerFirstFunc": lowerFirstFunc,
-		"tmpl":           Tmpl,
+		// "tmpl":           ExecuteTmpl,
 	}
 
-	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles("src/rules.tmpl")
+	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles(tmpl_name)
 	if err != nil {
 		return "", fmt.Errorf("could not parse rules template file: %v", err)
 	}
@@ -123,11 +92,18 @@ func Tmpl(name string, data any) (string, error) {
 	return buffer.String(), nil
 }
 
-func lowerFirstFunc(str string) string {
-	if str == "" {
-		return str
-	}
-	firstchar := []rune(str)[0]
-	firstchar = unicode.ToLower(firstchar)
-	return string(firstchar) + str[1:]
+func (f ListField) FieldValidationCode() (string, error) {
+	return ExecuteTmpl("src/template.tmpl", "list_field_validation", f)
+}
+
+func (f PrimitiveField) FieldValidationCode() (string, error) {
+	return ExecuteTmpl("src/template.tmpl", "primitive_field_validation", f)
+}
+
+func (t PrimitiveRule) RuleValidationCode() (string, error) {
+	return ExecuteTmpl("src/rules.tmpl", t.Func, t)
+}
+
+func (t ListRule) RuleValidationCode() (string, error) {
+	return ExecuteTmpl("src/rules.tmpl", t.Func, t)
 }
