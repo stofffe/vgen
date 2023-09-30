@@ -10,9 +10,10 @@ import (
 
 func main() {
 	person, err := test.PersonVgen{
-		Name:  P("helo"),
-		Age:   P(17),
-		Vibes: nil,
+		Name:      P("helo"),
+		Age:       P(17),
+		Vibes:     nil,
+		Nicknames: P([]string{"hello", "yoyo", "abc", "noooooooooooooooooo"}),
 	}.Validate()
 	if err != nil {
 		PrettyPrintJson("err", err.Error())
@@ -20,6 +21,45 @@ func main() {
 	}
 	fmt.Printf("person: %v\n", person)
 }
+
+// [">1", ":>10"]
+//
+// {
+// 	age: [],
+// 	nicknames: [">1", "0:>10", "2:>10"]
+// }
+//
+// {
+// 	age: [req],
+// 	nicknames: {
+// 		list: [">1"],
+// 		values: {
+// 			0: [">10"],
+// 			2: [">10"],
+// 		}
+// 	}
+// }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 func P[T any](t T) *T {
 	return &t

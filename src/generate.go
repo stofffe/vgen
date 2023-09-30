@@ -12,8 +12,9 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	var buffer bytes.Buffer
 
 	func_map := template.FuncMap{
-		"ruleFunc":       ruleFunc,
+		// "ruleFunc":       ruleFunc,
 		"lowerFirstFunc": lowerFirstFunc,
+		"tmpl":           Tmpl,
 	}
 
 	// parse template
@@ -44,6 +45,8 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		}
 	}
 
+	// return buffer.Bytes(), nil
+
 	// fmt
 	bytes, err := format.Source(buffer.Bytes())
 	if err != nil {
@@ -53,10 +56,57 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	return bytes, nil
 }
 
-// TODO SLOW reuse template?
-func ruleFunc(rule Rule) (string, error) {
+func (f ListField) RulesCode() (string, error) {
 	func_map := template.FuncMap{
 		"lowerFirstFunc": lowerFirstFunc,
+		"tmpl":           Tmpl,
+	}
+
+	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles("src/template.tmpl")
+	if err != nil {
+		return "", fmt.Errorf("could not parse rules template file: %v", err)
+	}
+
+	var buffer bytes.Buffer
+	err = tmpl.ExecuteTemplate(&buffer, "list_field_validation", f)
+	if err != nil {
+		return "", fmt.Errorf("could not execute rules template file: %v", err)
+	}
+
+	return buffer.String(), nil
+
+}
+
+func (f PrimitiveField) RulesCode() (string, error) {
+	func_map := template.FuncMap{
+		"lowerFirstFunc": lowerFirstFunc,
+		"tmpl":           Tmpl,
+	}
+
+	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles("src/template.tmpl")
+	if err != nil {
+		return "", fmt.Errorf("could not parse rules template file: %v", err)
+	}
+
+	var buffer bytes.Buffer
+	err = tmpl.ExecuteTemplate(&buffer, "primitive_field_validation", f)
+	if err != nil {
+		return "", fmt.Errorf("could not execute rules template file: %v", err)
+	}
+
+	return buffer.String(), nil
+}
+
+// TODO SLOW reuse template?
+// func (rule Rule) RulesCodePrefix(prefix string) (string, error) {
+// 	rule.ErrorPrefix = prefix
+// 	return rule.RulesCode()
+// }
+
+func Tmpl(name string, data any) (string, error) {
+	func_map := template.FuncMap{
+		"lowerFirstFunc": lowerFirstFunc,
+		"tmpl":           Tmpl,
 	}
 
 	tmpl, err := template.New("rules").Funcs(func_map).ParseFiles("src/rules.tmpl")
@@ -65,7 +115,7 @@ func ruleFunc(rule Rule) (string, error) {
 	}
 
 	var buffer bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buffer, rule.Func, rule)
+	err = tmpl.ExecuteTemplate(&buffer, name, data)
 	if err != nil {
 		return "", fmt.Errorf("could not execute rules template file: %v", err)
 	}

@@ -6,18 +6,20 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 type PersonVgen struct {
-	Name  *string
-	Age   *int
-	Vibes *bool
+	Name      *string
+	Age       *int
+	Vibes     *bool
+	Nicknames *[]string
 }
 
 func (t PersonVgen) Validate() (Person, error) {
 	res := Person{}
 	errs := make(map[string][]string)
-	// Name string
+
 	if t.Name != nil {
 		name := *t.Name
 
@@ -38,7 +40,6 @@ func (t PersonVgen) Validate() (Person, error) {
 		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
 	}
 
-	// Age int
 	if t.Age != nil {
 		age := *t.Age
 
@@ -55,13 +56,36 @@ func (t PersonVgen) Validate() (Person, error) {
 		errs["age"] = append(errs["age"], fmt.Sprintf("required"))
 	}
 
-	// Vibes bool
 	if t.Vibes != nil {
 		vibes := *t.Vibes
 
 		res.Vibes = vibes
 	} else {
 		errs["vibes"] = append(errs["vibes"], fmt.Sprintf("required"))
+	}
+
+	if t.Nicknames != nil {
+		nicknames := *t.Nicknames
+
+		if !(len(nicknames) > 3) {
+			errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`len must be > 3`))
+		}
+
+		if err := totLen(nicknames); err != nil {
+			errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`failed custom totLen: %v`, err))
+		}
+
+		for i, nicknames := range nicknames {
+
+			if !(len(nicknames) >= 4) {
+				errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(strconv.Itoa(i)+":"+`len must be >= 4`))
+			}
+
+		}
+
+		res.Nicknames = nicknames
+	} else {
+		errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf("required"))
 	}
 
 	if len(errs) > 0 {

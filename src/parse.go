@@ -12,26 +12,64 @@ import (
 
 type ParseInfo struct {
 	Package string
-	Structs []StructType
+	Structs []Type
 }
+
+// types
+type Type interface {
+	isType()
+}
+type InvalidType struct{}
+
+func (t InvalidType) isType() {}
 
 type StructType struct {
 	Name   string
 	Fields []Field
 }
 
-type Field struct {
+func (t StructType) isType() {}
+
+// field
+type Field interface {
+	isField()
+}
+type PrimitiveField struct {
 	Name     string
-	Type     string
+	Typ      string
 	Rules    []Rule
 	Required bool
 }
 
-type Rule struct {
-	FieldName string
-	Func      string
-	Value     string
+func (f PrimitiveField) isField() {}
+
+type ListField struct {
+	Name       string
+	Typ        string
+	ListRules  []Rule
+	ValueRules []Rule
+	Required   bool
 }
+
+func (f ListField) isField() {}
+
+type InvalidField struct{}
+
+func (f InvalidField) isField() {}
+
+// rule
+type Rule interface {
+	isRule()
+}
+
+type PrimitiveRule struct {
+	FieldName    string
+	Func         string
+	Value        string
+	IncludeIndex bool
+}
+
+func (t PrimitiveRule) isRule() {}
 
 func parseFile(path string) (ParseInfo, error) {
 	// load file
@@ -42,9 +80,14 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, fmt.Errorf("could not parse file: %v", err)
 	}
 
+	// err = ast.Print(fset, file)
+	// if err != nil {
+	// 	return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
+	// }
+
 	// parse
 	var file_err error
-	var structs []StructType
+	var structs []Type
 	ast.Inspect(file, func(n ast.Node) bool {
 		if node, ok := n.(*ast.GenDecl); ok {
 			parsed_structs, err := parseGenDecl(node)
@@ -72,18 +115,14 @@ func parseFile(path string) (ParseInfo, error) {
 		Structs: structs,
 	}, nil
 
-	// err = ast.Print(fset, file)
-	// if err != nil {
-	// 	return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
-	// }
 }
 
 const INCLUDE_TAG = `i`
 
-func parseGenDecl(node *ast.GenDecl) ([]StructType, error) {
+func parseGenDecl(node *ast.GenDecl) ([]Type, error) {
 	// check for tag
 	if node.Doc == nil {
-		return []StructType{}, nil
+		return []Type{}, nil
 	}
 	hasTag := false
 	for _, comment := range node.Doc.List {
@@ -95,52 +134,54 @@ func parseGenDecl(node *ast.GenDecl) ([]StructType, error) {
 		}
 	}
 	if !hasTag {
-		return []StructType{}, nil
+		return []Type{}, nil
 	}
 
 	// check if type
 	if node.Tok != token.TYPE {
-		return []StructType{}, nil
+		return []Type{}, nil
 	}
 
 	// parse all types under decl
-	var structs []StructType
+	var structs []Type
 	for _, spec := range node.Specs {
 		type_node := spec.(*ast.TypeSpec) // already checked
 
 		s, err := parseType(type_node)
 		structs = append(structs, s)
 		if err != nil {
-			return []StructType{}, fmt.Errorf("could not parse type: %v", err)
+			return []Type{}, fmt.Errorf("could not parse type: %v", err)
 		}
 	}
 
 	return structs, nil
 }
 
-func parseType(node *ast.TypeSpec) (StructType, error) {
+func parseType(node *ast.TypeSpec) (Type, error) {
 	// check name
 	if node.Name == nil {
-		return StructType{}, fmt.Errorf("must have name")
+		return InvalidType{}, fmt.Errorf("must have name")
 	}
 
-	// check struct
-	struct_node, ok := node.Type.(*ast.StructType)
-	if !ok {
-		return StructType{}, fmt.Errorf("must be struct, got %s", node.Type)
+	switch t := node.Type.(type) {
+	case *ast.StructType:
+		return parseStructType(t, node.Name.Name)
+	default:
+		return InvalidType{}, fmt.Errorf("unsupported type %T", t)
 	}
+}
 
-	// check non empty
-	if struct_node.Fields == nil || len(struct_node.Fields.List) == 0 {
-		return StructType{}, fmt.Errorf("empty structs not supported")
+func parseStructType(node *ast.StructType, name string) (Type, error) {
+	if node.Fields == nil || len(node.Fields.List) == 0 {
+		return InvalidType{}, fmt.Errorf("empty structs not supported")
 	}
 
 	// parse
 	struct_type := StructType{
-		Name:   node.Name.Name,
+		Name:   name,
 		Fields: []Field{},
 	}
-	for _, field_node := range struct_node.Fields.List {
+	for _, field_node := range node.Fields.List {
 		field, err := parseField(field_node)
 		if err != nil {
 			return StructType{}, fmt.Errorf("could not parse field: %v", err)
@@ -149,15 +190,16 @@ func parseType(node *ast.TypeSpec) (StructType, error) {
 	}
 
 	return struct_type, nil
+
 }
 
 func parseField(node *ast.Field) (Field, error) {
 	// check name
 	if len(node.Names) == 0 {
-		return Field{}, fmt.Errorf("field without name not supported")
+		return InvalidField{}, fmt.Errorf("field without name not supported")
 	}
 	if len(node.Names) > 1 {
-		return Field{}, fmt.Errorf("field with multiple names not supported")
+		return InvalidField{}, fmt.Errorf("field with multiple names not supported")
 	}
 	name := node.Names[0].Name
 
@@ -171,21 +213,80 @@ func parseField(node *ast.Field) (Field, error) {
 	}
 
 	// parse
-	prim, ok := node.Type.(*ast.Ident)
-	if !ok {
-		return Field{}, fmt.Errorf("must be primitive value")
-	}
-	field, err := parseFieldPrimitive(prim, name, comment)
-	if err != nil {
-		return Field{}, fmt.Errorf("could not parse field primtive: %v", err)
+	var field Field
+	var err error
+
+	switch n := node.Type.(type) {
+	case *ast.Ident:
+		field, err = parsePrimitiveField(n, name, comment)
+		if err != nil {
+			return InvalidField{}, fmt.Errorf("could not parse field primtive: %v", err)
+		}
+	case *ast.ArrayType:
+		field, err = parseListField(n, name, comment)
+		if err != nil {
+			return InvalidField{}, fmt.Errorf("could not parse field primtive: %v", err)
+		}
+	default:
+		return InvalidField{}, fmt.Errorf("unsupported field type: %T", n)
 	}
 
 	return field, nil
 }
 
-func parseFieldPrimitive(node *ast.Ident, field_name string, comment string) (Field, error) {
-	rules_str := extractRules(comment)
+// no nested lists
+func parseListField(node *ast.ArrayType, field_name, comment string) (Field, error) {
+	// type
+	inner_type, ok := node.Elt.(*ast.Ident)
+	if !ok {
+		return InvalidField{}, fmt.Errorf("type of array must be primitive not: %T", node.Elt)
+	}
+	typ := "[]" + inner_type.Name
 
+	// rules
+	rules_str := extractRules(comment)
+	var list_rules_str []string
+	var value_rules_str []string
+	req := false
+	for _, rule := range rules_str {
+		if rule == "req" {
+			req = true
+			continue
+		}
+
+		if rule == "" {
+			return InvalidField{}, fmt.Errorf("empty rule")
+		}
+
+		// check rule
+		if []rune(rule)[0] == ':' {
+			value_rules_str = append(value_rules_str, rule[1:])
+		} else {
+			list_rules_str = append(list_rules_str, rule)
+		}
+	}
+
+	list_rules, err := parseRules(list_rules_str, field_name, false)
+	if err != nil {
+		return InvalidField{}, fmt.Errorf("could not parse list rules: %v", err)
+	}
+	value_rules, err := parseRules(value_rules_str, field_name, true)
+	if err != nil {
+		return InvalidField{}, fmt.Errorf("could not parse value rules: %v", err)
+	}
+
+	return ListField{
+		Name:       field_name,
+		Typ:        typ,
+		ListRules:  list_rules,
+		ValueRules: value_rules,
+		Required:   req,
+	}, nil
+}
+
+func parsePrimitiveField(node *ast.Ident, field_name, comment string) (Field, error) {
+	// rules
+	rules_str := extractRules(comment)
 	req := false
 	for _, rule := range rules_str {
 		if rule == "req" {
@@ -193,16 +294,15 @@ func parseFieldPrimitive(node *ast.Ident, field_name string, comment string) (Fi
 			break
 		}
 	}
-
-	rules, err := parseRules(rules_str, field_name)
+	rules, err := parseRules(rules_str, field_name, false)
 	if err != nil {
-		return Field{}, fmt.Errorf("could not parse rules: %v", err)
+		return InvalidField{}, fmt.Errorf("could not parse rules: %v", err)
 	}
 
 	typ := node.Name
-	return Field{
+	return PrimitiveField{
 		Name:     field_name,
-		Type:     typ,
+		Typ:      typ,
 		Rules:    rules,
 		Required: req,
 	}, nil
@@ -249,7 +349,7 @@ func createParseRulesRegex() *regexp.Regexp {
 	return regexp.MustCompile(pattern)
 }
 
-func parseRules(rules_str []string, name string) ([]Rule, error) {
+func parseRules(rules_str []string, name string, include_index bool) ([]Rule, error) {
 	var rules []Rule
 
 	for _, rule := range rules_str {
@@ -266,6 +366,7 @@ func parseRules(rules_str []string, name string) ([]Rule, error) {
 			}
 		}
 
+		// extract func and parameter (if exists)
 		f := filtered[0]
 		v := ""
 		if len(filtered) > 1 {
@@ -273,10 +374,11 @@ func parseRules(rules_str []string, name string) ([]Rule, error) {
 		}
 
 		// TODO add custom fieldname if json:"" supplied?
-		rules = append(rules, Rule{
-			FieldName: name,
-			Func:      f,
-			Value:     v,
+		rules = append(rules, PrimitiveRule{
+			FieldName:    name,
+			Func:         f,
+			Value:        v,
+			IncludeIndex: include_index,
 		})
 	}
 
