@@ -18,7 +18,7 @@ type PersonVgen struct {
 
 func (t PersonVgen) Validate() (Person, error) {
 	// TODO add output formatting here
-	person, errs := t.innerValidation("")
+	person, errs := t.innerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Person{}, fmt.Errorf("%s", j)
@@ -26,11 +26,12 @@ func (t PersonVgen) Validate() (Person, error) {
 	return person, nil
 }
 
-func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string) {
+func (t PersonVgen) innerValidation() (Person, map[string][]string) {
 	res := Person{}
 	errs := make(map[string][]string)
 
 	if t.Name != nil {
+
 		name := *t.Name
 
 		if !(len(name) > 0) {
@@ -47,6 +48,7 @@ func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string)
 	}
 
 	if t.Age != nil {
+
 		age := *t.Age
 
 		if !(age >= 18) {
@@ -59,6 +61,7 @@ func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string)
 	}
 
 	if t.Vibes != nil {
+
 		vibes := *t.Vibes
 
 		res.Vibes = vibes
@@ -67,6 +70,7 @@ func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string)
 	}
 
 	if t.Nicknames != nil {
+
 		nicknames := *t.Nicknames
 
 		if !(len(nicknames) > 3) {
@@ -74,10 +78,10 @@ func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string)
 		}
 
 		for i, nicknames := range nicknames {
-			suffix := fmt.Sprintf("[%d]", i)
+			index := fmt.Sprintf("[%d]", i)
 
 			if !(len(nicknames) >= 4) {
-				errs[prefix+"nicknames"+suffix] = append(errs[prefix+"nicknames"+suffix], fmt.Sprintf(`len must be greater than or equal to 4`))
+				errs["nicknames"+index] = append(errs["nicknames"+index], fmt.Sprintf(`len must be greater than or equal to 4`))
 			}
 
 		}

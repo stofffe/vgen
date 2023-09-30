@@ -34,7 +34,7 @@ func main() {
 		Vibes: nil,
 	}.Validate()
 	if err != nil {
-		util.DebugPrint("err", err.Error())
+		util.DebugPrintString("err", err.Error())
 	} else {
 		fmt.Printf("person: %v\n", person)
 	}

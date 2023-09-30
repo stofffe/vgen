@@ -90,6 +90,11 @@ func ExecuteTmpl(tmpl_name, name string, data any) (string, error) {
 	return buffer.String(), nil
 }
 
+func (f TypeField) FieldValidationCode() (string, error) {
+	// TODO temp
+	return ExecuteTmpl("src/template.tmpl", "type_field_validation", f)
+}
+
 func (f ListField) FieldValidationCode() (string, error) {
 	return ExecuteTmpl("src/template.tmpl", "list_field_validation", f)
 }

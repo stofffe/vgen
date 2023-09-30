@@ -16,7 +16,7 @@ type AddressVgen struct {
 
 func (t AddressVgen) Validate() (Address, error) {
 	// TODO add output formatting here
-	address, errs := t.innerValidation("")
+	address, errs := t.innerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Address{}, fmt.Errorf("%s", j)
@@ -24,11 +24,12 @@ func (t AddressVgen) Validate() (Address, error) {
 	return address, nil
 }
 
-func (t AddressVgen) innerValidation(prefix string) (Address, map[string][]string) {
+func (t AddressVgen) innerValidation() (Address, map[string][]string) {
 	res := Address{}
 	errs := make(map[string][]string)
 
 	if t.Street != nil {
+
 		street := *t.Street
 
 		if !(len(street) > 0) {
@@ -41,10 +42,11 @@ func (t AddressVgen) innerValidation(prefix string) (Address, map[string][]strin
 	}
 
 	if t.Number != nil {
+
 		number := *t.Number
 
-		if !(number >= 0) {
-			errs["number"] = append(errs["number"], fmt.Sprintf(`must be greater than or equal to 0`))
+		if !(number > 0) {
+			errs["number"] = append(errs["number"], fmt.Sprintf(`must be greater than 0`))
 		}
 
 		res.Number = number
@@ -67,7 +69,7 @@ type PersonVgen struct {
 
 func (t PersonVgen) Validate() (Person, error) {
 	// TODO add output formatting here
-	person, errs := t.innerValidation("")
+	person, errs := t.innerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Person{}, fmt.Errorf("%s", j)
@@ -75,11 +77,12 @@ func (t PersonVgen) Validate() (Person, error) {
 	return person, nil
 }
 
-func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string) {
+func (t PersonVgen) innerValidation() (Person, map[string][]string) {
 	res := Person{}
 	errs := make(map[string][]string)
 
 	if t.Name != nil {
+
 		name := *t.Name
 
 		if !(len(name) > 0) {
@@ -96,6 +99,7 @@ func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string)
 	}
 
 	if t.Address1 != nil {
+
 		address1 := *t.Address1
 
 		if err := valAddr(address1); err != nil {
@@ -108,17 +112,22 @@ func (t PersonVgen) innerValidation(prefix string) (Person, map[string][]string)
 	}
 
 	if t.Address2 != nil {
-		address2_ := *t.Address2
 
-		address2, err := address2_.innerValidation("")
+		address2, err := t.Address2.innerValidation()
 		if err != nil {
 			for k, v := range err {
 				errs["address2."+k] = append(errs["address2."+k], v...)
 			}
-		}
+		} else {
 
-		if err := valAddr(address2); err != nil {
-			errs["address2"] = append(errs["address2"], fmt.Sprintf(`%v`, err))
+			if err := valAddr(address2); err != nil {
+				errs["address2"] = append(errs["address2"], fmt.Sprintf(`%v`, err))
+			}
+
+			if err := abc(address2); err != nil {
+				errs["address2"] = append(errs["address2"], fmt.Sprintf(`%v`, err))
+			}
+
 		}
 
 		res.Address2 = address2

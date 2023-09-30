@@ -34,6 +34,7 @@ func (t InvalidType) isType() {}
 // field
 type Field interface {
 	isField()
+	FieldValidationCode() (string, error)
 }
 type PrimitiveField struct {
 	Name     string
@@ -50,10 +51,15 @@ type ListField struct {
 }
 type TypeField struct {
 	Name     string
-	Typ      string
+	typ      string
 	Rules    []Rule
 	Required bool
 }
+
+func (f TypeField) Typ() string {
+	return f.typ + "Vgen"
+}
+
 type InvalidField struct{}
 
 func (f PrimitiveField) isField() {}
@@ -61,9 +67,12 @@ func (f ListField) isField()      {}
 func (f TypeField) isField()      {}
 func (f InvalidField) isField()   {}
 
+func (f InvalidField) FieldValidationCode() (string, error) { return "", nil }
+
 // rule
 type Rule interface {
 	isRule()
+	RuleValidationCode() (string, error)
 }
 type PrimitiveRule struct {
 	FieldName string
@@ -80,6 +89,8 @@ type InvalidRule struct{}
 func (t ListRule) isRule()      {}
 func (t PrimitiveRule) isRule() {}
 func (t InvalidRule) isRule()   {}
+
+func (f InvalidRule) RuleValidationCode() (string, error) { return "", nil }
 
 func parseFile(path string) (ParseInfo, error) {
 	// load file
@@ -221,16 +232,35 @@ func parseField(node *ast.Field) (Field, error) {
 		comment = node.Comment.List[0].Text
 	}
 
+	// check if type
+	rules_str := extractRules(comment)
+	inc := false
+	for _, rule := range rules_str {
+		if rule == "i" {
+			inc = true
+		}
+	}
+
 	// parse
 	var field Field
 	var err error
 
 	switch n := node.Type.(type) {
 	case *ast.Ident:
-		field, err = parsePrimitiveField(n, name, comment)
-		if err != nil {
-			return InvalidField{}, fmt.Errorf("could not parse field primtive: %v", err)
+		// if type
+		if n.Obj != nil && inc {
+			field, err = parseTypeField(n, name, comment)
+			if err != nil {
+				return InvalidField{}, fmt.Errorf("could not parse field primtive: %v", err)
+			}
+			// if prim
+		} else {
+			field, err = parsePrimitiveField(n, name, comment)
+			if err != nil {
+				return InvalidField{}, fmt.Errorf("could not parse field primtive: %v", err)
+			}
 		}
+
 	case *ast.ArrayType:
 		field, err = parseListField(n, name, comment)
 		if err != nil {
@@ -291,6 +321,30 @@ func parseListField(node *ast.ArrayType, field_name, comment string) (Field, err
 		ListRules:  list_rules,
 		ValueRules: value_rules,
 		Required:   req,
+	}, nil
+}
+
+func parseTypeField(node *ast.Ident, field_name, comment string) (Field, error) {
+	// rules
+	rules_str := extractRules(comment)
+	req := false
+	for _, rule := range rules_str {
+		if rule == "req" {
+			req = true
+			break
+		}
+	}
+	rules, err := parseRules(rules_str, field_name, false)
+	if err != nil {
+		return InvalidField{}, fmt.Errorf("could not parse rules: %v", err)
+	}
+
+	typ := node.Name
+	return TypeField{
+		Name:     field_name,
+		typ:      typ,
+		Rules:    rules,
+		Required: req,
 	}, nil
 }
 
