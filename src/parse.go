@@ -15,6 +15,7 @@ import (
 type ParseInfo struct {
 	Package string
 	Types   []Type
+	Imports []string
 }
 
 // types
@@ -117,6 +118,7 @@ func parseFile(path string) (ParseInfo, error) {
 	return ParseInfo{
 		Package: package_name,
 		Types:   types,
+		Imports: []string{"encoding/json", "fmt"},
 	}, nil
 
 }

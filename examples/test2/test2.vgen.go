@@ -5,8 +5,8 @@ package main
 
 import (
 	"encoding/json"
+
 	"fmt"
-	"strconv"
 )
 
 type PersonVgen struct {
@@ -28,7 +28,7 @@ func (t PersonVgen) Validate() (Person, error) {
 		}
 
 		if !(len(name) < 20) {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`len must be < 20`))
+			errs["name"] = append(errs["name"], fmt.Sprintf(`len must be less than 20`))
 		}
 
 		res.Name = name
@@ -40,7 +40,7 @@ func (t PersonVgen) Validate() (Person, error) {
 		age := *t.Age
 
 		if !(age >= 18) {
-			errs["age"] = append(errs["age"], fmt.Sprintf(`must be >= 18`))
+			errs["age"] = append(errs["age"], fmt.Sprintf(`must be greater than or equal to 18`))
 		}
 
 		res.Age = age
@@ -60,13 +60,13 @@ func (t PersonVgen) Validate() (Person, error) {
 		nicknames := *t.Nicknames
 
 		if !(len(nicknames) > 3) {
-			errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`len must be > 3`))
+			errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`len must be greater than 3`))
 		}
 
 		for i, nicknames := range nicknames {
 
 			if !(len(nicknames) >= 4) {
-				errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(strconv.Itoa(i)+":"+`len must be >= 4`))
+				errs["nicknames"] = append(errs["nicknames"], fmt.Sprintf(`%d: len must be greater than or equal to 4`, i))
 			}
 
 		}

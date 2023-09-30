@@ -25,7 +25,7 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	}
 
 	// package
-	err = tmpl.ExecuteTemplate(&buffer, "package", info.Package)
+	err = tmpl.ExecuteTemplate(&buffer, "package", info)
 	if err != nil {
 		return []byte{}, fmt.Errorf("could not execute package template: %v", err)
 	}

@@ -8,21 +8,9 @@ import (
 
 // vgen:[i]
 type Person struct {
-	Name      string   // vgen:[ req, not_empty, len_lt(20), custom(isBob) ]
-	Age       int      // vgen:[ req, gte(18), custom(driveAge) ]
-	Vibes     bool     // vgen:[ req ]
-	Nicknames []string // vgen:[ req, len_gt(3), :len_gte(4), custom(totLen)]
-}
-
-func totLen(s []string) error {
-	l := 0
-	for _, v := range s {
-		l += len(v)
-	}
-	if l > 10 {
-		return fmt.Errorf("tot len must be < 10")
-	}
-	return nil
+	Name  string // vgen:[ req, not_empty, len_lt(20), custom(isBob) ]
+	Age   int    // vgen:[ req, gte(18), custom(driveAge) ]
+	Vibes bool   // vgen:[ req ]
 }
 
 func driveAge(t int) error {
@@ -41,10 +29,9 @@ func isBob(t string) error {
 
 func main() {
 	person, err := PersonVgen{
-		Name:      util.InitP("helo"),
-		Age:       util.InitP(17),
-		Vibes:     nil,
-		Nicknames: util.InitP([]string{"hello", "yoyo", "abc", "noooooooooooooooooo"}),
+		Name:  util.InitP("helo"),
+		Age:   util.InitP(17),
+		Vibes: nil,
 	}.Validate()
 	if err != nil {
 		util.DebugPrint("err", err.Error())
