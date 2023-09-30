@@ -22,6 +22,16 @@ type {{ .Name }}Vgen struct {
 
 {{ define "struct_validation" }}
 func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
+    // TODO add output formatting here
+    {{ lowerFirstFunc .Name }}, errs :=  t.innerValidation("")
+    if len(errs) > 0 {
+        j, _ := json.Marshal(errs)
+        return {{ .Name }}{}, fmt.Errorf("%s", j)
+    }
+    return {{ lowerFirstFunc .Name }}, nil
+}
+
+func (t {{ .Name }}Vgen) innerValidation(prefix string) ({{ .Name }}, map[string][]string) {
     res := {{ .Name }}{}
     errs := make(map[string][]string)
 
@@ -38,8 +48,7 @@ func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
     {{ end }}
 
 	if len(errs) > 0 {
-		j, _ := json.Marshal(errs)
-		return {{ .Name }}{}, fmt.Errorf("%s", j)
+		return {{ .Name }}{}, errs
 	}
 
     return res, nil
@@ -58,8 +67,20 @@ func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
     {{ end }}
 
     for i, {{ lowerFirstFunc .Name }} := range {{ lowerFirstFunc .Name }} {
+		suffix := fmt.Sprintf("[%d]", i)
         {{ range .ValueRules }} 
             {{ .RuleValidationCode }}
         {{ end }}
     }
+{{ end }}
+
+{{ define "type_field_validation"}}
+    // TODO
+    // // i
+    // address2, err := address.innerValidation("")
+    // if err != nil {
+    // 	for k, v := range err {
+    // 		errs["address2"+k] = append(errs["address2."+k], v...)
+    // 	}
+    // }
 {{ end }}

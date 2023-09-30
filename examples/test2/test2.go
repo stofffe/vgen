@@ -22,7 +22,7 @@ func main() {
 		Nicknames: util.InitP([]string{"hello", "yoyo", "abc", "noooooooooooooooooo"}),
 	}.Validate()
 	if err != nil {
-		util.DebugPrint("err", err.Error())
+		util.DebugPrintString("err", err.Error())
 	} else {
 		fmt.Printf("person: %v\n", person)
 	}

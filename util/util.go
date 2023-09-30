@@ -14,13 +14,8 @@ func InitP[T any](t T) *T {
 
 // prints any value by marshalling
 // crashes if value is not marshallable
-func DebugPrint(name string, val string) {
-	var unmarshalled any
-	err := json.Unmarshal([]byte(val), &unmarshalled)
-	if err != nil {
-		log.Fatalf("could not unmarshal: %v", val)
-	}
-	j, err := json.MarshalIndent(unmarshalled, "", "  ")
+func DebugPrintAny(name string, val any) {
+	j, err := json.MarshalIndent(val, "", "  ")
 	if err != nil {
 		log.Fatalf("could not debug print: %v", err)
 	}
@@ -30,6 +25,17 @@ Debug print %s
 %s
 ----------------------------------
 `, name, string(j))
+}
+
+// prints any value by marshalling
+// crashes if value is not marshallable
+func DebugPrintString(name string, val string) {
+	var unmarshalled any
+	err := json.Unmarshal([]byte(val), &unmarshalled)
+	if err != nil {
+		log.Fatalf("could not unmarshal: %v", val)
+	}
+	DebugPrintAny(name, unmarshalled)
 }
 
 // check if a list contains a specific value

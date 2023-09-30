@@ -23,36 +23,36 @@ func (t PersonVgen) Validate() (Person, error) {
 		name := *t.Name
 
 		if !(len(name) > 0) {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`can not be empty`))
+			errs["name"] = append(errs["name"], fmt.Sprintf(`name: can not be empty`))
 		}
 
 		if !(len(name) < 20) {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`len must be less than 20`))
+			errs["name"] = append(errs["name"], fmt.Sprintf(`name: must be less than 20`))
 		}
 
 		if err := isBob(name); err != nil {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`failed custom isBob: %v`, err))
+			errs["name"] = append(errs["name"], fmt.Sprintf(`name: failed custom isBob: %v`, err))
 		}
 
 		res.Name = name
 	} else {
-		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
+		errs["name"] = append(errs["name"], fmt.Sprintf(`name: required`))
 	}
 
 	if t.Age != nil {
 		age := *t.Age
 
 		if !(age >= 18) {
-			errs["age"] = append(errs["age"], fmt.Sprintf(`must be greater than or equal to 18`))
+			errs["age"] = append(errs["age"], fmt.Sprintf(`age: must be greater than or equal to 18`))
 		}
 
 		if err := driveAge(age); err != nil {
-			errs["age"] = append(errs["age"], fmt.Sprintf(`failed custom driveAge: %v`, err))
+			errs["age"] = append(errs["age"], fmt.Sprintf(`age: failed custom driveAge: %v`, err))
 		}
 
 		res.Age = age
 	} else {
-		errs["age"] = append(errs["age"], fmt.Sprintf("required"))
+		errs["age"] = append(errs["age"], fmt.Sprintf(`age: required`))
 	}
 
 	if t.Vibes != nil {
@@ -60,7 +60,7 @@ func (t PersonVgen) Validate() (Person, error) {
 
 		res.Vibes = vibes
 	} else {
-		errs["vibes"] = append(errs["vibes"], fmt.Sprintf("required"))
+		errs["vibes"] = append(errs["vibes"], fmt.Sprintf(`vibes: required`))
 	}
 
 	if len(errs) > 0 {

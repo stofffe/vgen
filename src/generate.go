@@ -12,9 +12,7 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	var buffer bytes.Buffer
 
 	func_map := template.FuncMap{
-		// "ruleFunc":       ruleFunc,
 		"lowerFirstFunc": lowerFirstFunc,
-		"tmplFunc":       ExecuteTmpl,
 	}
 
 	// parse template

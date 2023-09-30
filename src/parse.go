@@ -48,10 +48,17 @@ type ListField struct {
 	ValueRules []Rule
 	Required   bool
 }
+type TypeField struct {
+	Name     string
+	Typ      string
+	Rules    []Rule
+	Required bool
+}
 type InvalidField struct{}
 
 func (f PrimitiveField) isField() {}
 func (f ListField) isField()      {}
+func (f TypeField) isField()      {}
 func (f InvalidField) isField()   {}
 
 // rule
@@ -70,12 +77,9 @@ type ListRule struct {
 }
 type InvalidRule struct{}
 
-func (t ListRule) isRule() {}
-
+func (t ListRule) isRule()      {}
 func (t PrimitiveRule) isRule() {}
-
-func (t InvalidRule) isRule()        {}
-func (t InvalidRule) String() string { return "" }
+func (t InvalidRule) isRule()   {}
 
 func parseFile(path string) (ParseInfo, error) {
 	// load file
@@ -86,10 +90,10 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, fmt.Errorf("could not parse file: %v", err)
 	}
 
-	// err = ast.Print(fset, file)
-	// if err != nil {
-	// 	return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
-	// }
+	err = ast.Print(fset, file)
+	if err != nil {
+		return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
+	}
 
 	// parse
 	var file_err error
@@ -349,6 +353,8 @@ func createParseRulesRegex() *regexp.Regexp {
 	lte := `^(lte)\((.+)\)$`         // string, int, float
 	custom := `^(custom)\((.+)\)$`   // all
 
+	nested_type := `^(i)$`
+
 	list_req := `^(:req)$`                 // all
 	list_len_gt := `^(:len_gt)\((.+)\)$`   // string, list, map
 	list_len_lt := `^(:len_lt)\((.+)\)$`   // string, list, map
@@ -363,6 +369,7 @@ func createParseRulesRegex() *regexp.Regexp {
 
 	rules := []string{
 		req, len_gt, len_lt, len_gte, len_lte, not_empty, gt, lt, gte, lte, custom,
+		nested_type,
 		list_req, list_len_gt, list_len_lt, list_len_gte, list_len_lte, list_not_empty, list_gt, list_lt, list_gte, list_lte, list_custom,
 	}
 	pattern := strings.Join(rules, "|")
