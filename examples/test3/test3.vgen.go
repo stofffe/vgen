@@ -45,8 +45,8 @@ func (t AddressVgen) innerValidation() (Address, map[string][]string) {
 
 		number := *t.Number
 
-		if !(number > 0) {
-			errs["number"] = append(errs["number"], fmt.Sprintf(`must be greater than 0`))
+		if !(number < 5) {
+			errs["number"] = append(errs["number"], fmt.Sprintf(`must be less than 5`))
 		}
 
 		res.Number = number

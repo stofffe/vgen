@@ -8,10 +8,10 @@ import (
 
 // vgen:[i]
 type Person struct {
-	Name      string   // vgen:[ req, not_empty, len_lt(20)]
-	Age       int      // vgen:[ req, gte(18) ]
+	Name      string   // vgen:[ req, not_empty, len_lt=20]
+	Age       int      // vgen:[ req, gte=18 ]
 	Vibes     bool     // vgen:[ req ]
-	Nicknames []string // vgen:[ req, len_gt(3), :len_gte(4)]
+	Nicknames []string // vgen:[ req, len_gt=3, :len_gte=4]
 }
 
 func main() {

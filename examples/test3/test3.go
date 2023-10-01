@@ -9,14 +9,14 @@ import (
 // vgen:[i]
 type Address struct {
 	Street string // vgen:[req, not_empty]
-	Number int    // vgen:[req, gt(0)]
+	Number int    // vgen:[req, lt=5]
 }
 
 // vgen:[i]
 type Person struct {
-	Name     string  // vgen:[ req, not_empty, len_lt(20)]
-	Address1 Address // vgen:[req, custom(valAddr)]
-	Address2 Address // vgen:[i, req, custom(valAddr), custom(abc)]
+	Name     string  // vgen:[ req, not_empty, len_lt=20]
+	Address1 Address // vgen:[req, custom=valAddr]
+	Address2 Address // vgen:[i, req, custom=valAddr, custom=abc]
 	// Address3 struct {
 	// 	Street string
 	// 	Number int
@@ -39,8 +39,8 @@ func main() {
 			Number: 123,
 		},
 		Address2: &AddressVgen{
-			Street: util.InitP("st stree"),
-			Number: util.InitP(0),
+			Street: util.InitP(""),
+			Number: util.InitP(100),
 		},
 	}.Validate()
 	if err != nil {
