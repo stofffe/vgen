@@ -8,6 +8,9 @@ if !(len({{ .LowerName }}) > 0) {
 {{ end }}
 
 {{ define "custom" }}
+if err := {{ .Param }}({{ .LowerName }}); err != nil {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], err.Error())
+}
 {{ end }}
 
 {{ define "gt" }}

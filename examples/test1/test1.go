@@ -8,18 +8,17 @@ import (
 
 // vgen:[i]
 type Person struct {
-	Name  string // vgen:[ req, not_empty ]
+	Name  string // vgen:[ req, not_empty , custom=isBob]
 	Age   int    // vgen:[ req, gt=18, lt=22 ]
 	Vibes bool   // vgen:[ req ]
 }
 
-func driveAge(t int) error {
-	if t < 18 {
-		return fmt.Errorf("must be at least 18")
-	}
-	return nil
-}
-
+//	func driveAge(t int) error {
+//		if t < 18 {
+//			return fmt.Errorf("must be at least 18")
+//		}
+//		return nil
+//	}
 func isBob(t string) error {
 	if t != "Bob" {
 		return fmt.Errorf("must be Bob")
@@ -29,7 +28,7 @@ func isBob(t string) error {
 
 func main() {
 	person, err := PersonVgen{
-		Name:  util.InitP("helo"),
+		Name:  util.InitP("bob"),
 		Age:   util.InitP(17),
 		Vibes: nil,
 	}.Validate()
