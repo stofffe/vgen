@@ -30,6 +30,8 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 			errs[fmt.Sprintf("name")] = append(errs[fmt.Sprintf("name")], err.Error())
 		}
 		_ = name // No rules fix
+	} else {
+		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
 	}
 	if t.Age != nil {
 		age := *t.Age // TODO not working for 0 rules
@@ -40,10 +42,14 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 			errs[fmt.Sprintf("age")] = append(errs[fmt.Sprintf("age")], fmt.Sprintf("must be < 22"))
 		}
 		_ = age // No rules fix
+	} else {
+		errs["age"] = append(errs["age"], fmt.Sprintf("required"))
 	}
 	if t.Vibes != nil {
 		vibes := *t.Vibes // TODO not working for 0 rules
 		_ = vibes // No rules fix
+	} else {
+		errs["vibes"] = append(errs["vibes"], fmt.Sprintf("required"))
 	}
 	if len(errs) > 0 {
 		return Person{}, errs

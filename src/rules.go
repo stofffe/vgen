@@ -244,7 +244,12 @@ func (p *Parser) expectRule() error {
 
 	rule := token.value
 	switch rule {
-	case "req", "not_empty":
+	case "req", "required", "i", "include":
+		err := p.expectNoArgRule(rule)
+		if err != nil {
+			return err
+		}
+	case "not_empty":
 		err := p.expectNoArgRule(rule)
 		if err != nil {
 			return err
@@ -272,11 +277,18 @@ func (p *Parser) expectRule() error {
 }
 
 func (p *Parser) expectNoArgRule(rule string) error {
-	p.AddRule(Rule{
-		name:  p.name,
-		rule:  rule,
-		depth: p.depth,
-	})
+	switch rule {
+	case "req", "required":
+		p.rules.required = true
+	case "i", "include":
+		p.rules.include = true
+	default:
+		p.AddRule(Rule{
+			name:  p.name,
+			rule:  rule,
+			depth: p.depth,
+		})
+	}
 	return nil
 }
 
@@ -323,41 +335,3 @@ func (p *Parser) expectToken(expected TokenType) (Token, error) {
 	}
 	return token, nil
 }
-
-// func (p *Parser) Peek() (Token, bool) {
-// 	if len(p.tokens) == 0 {
-// 		return Token{}, false
-// 	}
-// 	return p.tokens[0], true
-// }
-//
-// func (p *Parser) Consume() (Token, bool) {
-// 	if len(p.tokens) == 0 {
-// 		return Token{}, false
-// 	}
-// 	r := p.tokens[0]
-// 	p.tokens = p.tokens[1:]
-// 	return r, true
-// }
-
-// exec
-// func (l *lexer) MatchString(str string) bool {
-// 	n := len(str)
-// 	if len(l.input) < n {
-// 		return false
-// 	}
-// 	r := l.input[:n]
-// 	return r == str
-// }
-// func (l *lexer) ConsumeString(str string) {
-// 	l.input = l.input[len(str):]
-// }
-
-// var RULES_ARG = []string{
-// 	"custom",
-// 	"len_gt", "len_gte", "len_lt", "len_lte",
-// 	"gt", "gte", "lt", "lte",
-// }
-// var RULES_NOARG = []string{
-// 	"req", "not_empty",
-// }
