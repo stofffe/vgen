@@ -62,10 +62,9 @@ func (t AddressVgen) innerValidation() (Address, map[string][]string) {
 }
 
 type PersonVgen struct {
-	Name      *string
-	Address1  *Address
-	Address2  *AddressVgen
+	Address   *AddressVgen
 	Addresses *[]Address
+	Strings   *[]string
 }
 
 func (t PersonVgen) Validate() (Person, error) {
@@ -82,54 +81,20 @@ func (t PersonVgen) innerValidation() (Person, map[string][]string) {
 	res := Person{}
 	errs := make(map[string][]string)
 
-	if t.Name != nil {
+	if t.Address != nil {
 
-		name := *t.Name
-
-		if !(len(name) > 0) {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`can not be empty`))
-		}
-
-		if !(len(name) < 20) {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`len must be less than 20`))
-		}
-
-		res.Name = name
-	} else {
-		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
-	}
-
-	if t.Address1 != nil {
-
-		address1 := *t.Address1
-
-		if err := valAddr(address1); err != nil {
-			errs["address1"] = append(errs["address1"], fmt.Sprintf(`%v`, err))
-		}
-
-		res.Address1 = address1
-	} else {
-		errs["address1"] = append(errs["address1"], fmt.Sprintf("required"))
-	}
-
-	if t.Address2 != nil {
-
-		address2, err := t.Address2.innerValidation()
+		address, err := t.Address.innerValidation()
 		if err != nil {
 			for k, v := range err {
-				errs["address2."+k] = append(errs["address2."+k], v...)
+				errs["address."+k] = append(errs["address."+k], v...)
 			}
 		} else {
 
-			if err := valAddr(address2); err != nil {
-				errs["address2"] = append(errs["address2"], fmt.Sprintf(`%v`, err))
-			}
-
 		}
 
-		res.Address2 = address2
+		res.Address = address
 	} else {
-		errs["address2"] = append(errs["address2"], fmt.Sprintf("required"))
+		errs["address"] = append(errs["address"], fmt.Sprintf("required"))
 	}
 
 	if t.Addresses != nil {
@@ -143,7 +108,7 @@ func (t PersonVgen) innerValidation() (Person, map[string][]string) {
 		for i, addresses := range addresses {
 			index := fmt.Sprintf("[%d]", i)
 
-			if err := valAddr(addresses); err != nil {
+			if err := abc(addresses); err != nil {
 				errs["addresses"+index] = append(errs["addresses"+index], fmt.Sprintf(`%v`, err))
 			}
 
@@ -152,6 +117,28 @@ func (t PersonVgen) innerValidation() (Person, map[string][]string) {
 		res.Addresses = addresses
 	} else {
 		errs["addresses"] = append(errs["addresses"], fmt.Sprintf("required"))
+	}
+
+	if t.Strings != nil {
+
+		strings := *t.Strings
+
+		if !(len(strings) > 0) {
+			errs["strings"] = append(errs["strings"], fmt.Sprintf(`len must be greater than 0`))
+		}
+
+		for i, strings := range strings {
+			index := fmt.Sprintf("[%d]", i)
+
+			if !(len(strings) > 0) {
+				errs["strings"+index] = append(errs["strings"+index], fmt.Sprintf(`can not be empty`))
+			}
+
+		}
+
+		res.Strings = strings
+	} else {
+		errs["strings"] = append(errs["strings"], fmt.Sprintf("required"))
 	}
 
 	if len(errs) > 0 {

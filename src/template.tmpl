@@ -15,76 +15,64 @@ import (
 {{ define "struct_type" }}
 type {{ .Name }}Vgen struct {
     {{- range .Fields }}
-        {{ .Name }} *{{ .Typ -}}
+        {{ .Name }} *{{ .Field.Typ -}}
     {{ end }}
 }
 {{ end }}
 
 {{ define "struct_validation" }}
 func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
-    // TODO add output formatting here
-    {{ lowerFirstFunc .Name }}, errs :=  t.innerValidation()
+    {{ .LowerName }}, errs :=  t.InnerValidation()
     if len(errs) > 0 {
         j, _ := json.Marshal(errs)
         return {{ .Name }}{}, fmt.Errorf("%s", j)
     }
-    return {{ lowerFirstFunc .Name }}, nil
+    return {{ .LowerName }}, nil
 }
 
-func (t {{ .Name }}Vgen) innerValidation() ({{ .Name }}, map[string][]string) {
+func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
     res := {{ .Name }}{}
-    errs := make(map[string][]string)
+    errs := make(map[string][]string) 
 
     {{ range .Fields }}
-        if t.{{ .Name }} != nil {
+    if t.{{ .Name }} != nil {
+        {{ .LowerName }} := *t.{{ .Name }} // TODO not working for 0 rules
 
-            {{ .FieldValidationCode }}
-
-            res.{{ .Name }} = {{ lowerFirstFunc .Name }}
-        }  {{ if .Required }} else {
-                errs["{{ lowerFirstFunc .Name }}"] = append(errs["{{ lowerFirstFunc .Name }}"], fmt.Sprintf("required"))
-        } {{- end }}
+        {{ .Field.Code }}
+        
+    } {{ if .Required }} else {
+        errs["{{ .LowerName }}"] = append(errs["{{ .LowerName }}"], fmt.Sprintf("required"))
+    } {{ end }}
     {{ end }}
 
-	if len(errs) > 0 {
-		return {{ .Name }}{}, errs
-	}
+    if len(errs) > 0 {
+        return {{ .Name }}{}, errs
+    }
 
     return res, nil
 }
 {{ end }}
 
-{{ define "primitive_field_validation"}}
-    {{ lowerFirstFunc .Name }} := *t.{{ .Name }}
-   {{ range .Rules }} 
-        {{ .RuleValidationCode }}
-   {{ end }}
-{{ end }}
-
-{{ define "list_field_validation"}}
-    {{ lowerFirstFunc .Name }} := *t.{{ .Name }}
-    {{ range .ListRules }} 
-        {{ .RuleValidationCode }}
+{{ define "prim-field-validation"}}
+{{ if .Rules }}
+    {{ range .Rules }}
+        {{ .Code }} 
     {{ end }}
-
-    for i, {{ lowerFirstFunc .Name }} := range {{ lowerFirstFunc .Name }} {
-		index := fmt.Sprintf("[%d]", i)
-        {{ range .ValueRules }} 
-            {{ .RuleValidationCode }}
-        {{ end }}
-    }
+{{ end }}
+    _ = {{ .LowerName }} // No rules fix
 {{ end }}
 
-{{ define "type_field_validation"}}
-    {{ lowerFirstFunc .Name }}, err := t.{{ .Name }}.innerValidation()
-    if err != nil {
-        for k, v := range err {
-            errs["{{ lowerFirstFunc .Name }}."+k] = append(errs["{{ lowerFirstFunc .Name }}."+k], v...)
-        }
-    } else {
-       {{ range .Rules }} 
-            {{ .RuleValidationCode }}
-       {{ end }}
-    }
-
+{{ define "list-field-validation"}}
+{{ range .Rules }}
+    {{ .Code }} 
 {{ end }}
+for i{{ .Depth }}, {{ .LowerName }} := range {{ .LowerName }} {
+    {{ .Inner.Code }}
+    _ = i{{ .Depth }}
+}
+{{ end }}
+
+{{ define "type-field-validation"}}
+// TYPE
+{{ end }}
+

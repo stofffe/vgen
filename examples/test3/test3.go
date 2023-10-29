@@ -15,8 +15,9 @@ type Address struct {
 // vgen:[i]
 type Person struct {
 	Name     string  // vgen:[ req, not_empty, len_lt=20]
-	Address1 Address // vgen:[req, custom=valAddr]
+	Address1 Address // vgen:[custom=valAddr]
 	Address2 Address // vgen:[i, req, custom=valAddr, custom=abc]
+	A        []int   // vgen:[req]
 	// Address3 struct {
 	// 	Street string
 	// 	Number int

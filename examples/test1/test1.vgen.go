@@ -16,8 +16,7 @@ type PersonVgen struct {
 }
 
 func (t PersonVgen) Validate() (Person, error) {
-	// TODO add output formatting here
-	person, errs := t.innerValidation()
+	person, errs := t.InnerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Person{}, fmt.Errorf("%s", j)
@@ -25,39 +24,50 @@ func (t PersonVgen) Validate() (Person, error) {
 	return person, nil
 }
 
-func (t PersonVgen) innerValidation() (Person, map[string][]string) {
+func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 	res := Person{}
 	errs := make(map[string][]string)
 
 	if t.Name != nil {
+		name := *t.Name // TODO not working for 0 rules
 
-		name := *t.Name
+		// RULES
 
+		// Name not_empty
 		if !(len(name) > 0) {
-			errs["name"] = append(errs["name"], fmt.Sprintf(`can not be empty`))
+			errs["name"] = append(errs["name"], fmt.Sprintf("can not be empty"))
 		}
 
-		res.Name = name
-	} else {
-		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
+		_ = name // No rules fix
+
 	}
 
 	if t.Age != nil {
+		age := *t.Age // TODO not working for 0 rules
 
-		age := *t.Age
+		// RULES
 
-		res.Age = age
-	} else {
-		errs["age"] = append(errs["age"], fmt.Sprintf("required"))
+		// Age gt 18
+		if !(age > 18) {
+			errs["age"] = append(errs["age"], fmt.Sprintf("must be > 18"))
+		}
+
+		// Age lt 22
+		if !(age < 22) {
+			errs["age"] = append(errs["age"], fmt.Sprintf("must be < 22"))
+		}
+
+		_ = age // No rules fix
+
 	}
 
 	if t.Vibes != nil {
+		vibes := *t.Vibes // TODO not working for 0 rules
 
-		vibes := *t.Vibes
+		// RULES
 
-		res.Vibes = vibes
-	} else {
-		errs["vibes"] = append(errs["vibes"], fmt.Sprintf("required"))
+		_ = vibes // No rules fix
+
 	}
 
 	if len(errs) > 0 {

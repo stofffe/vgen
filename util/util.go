@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"unicode"
 )
 
 // initialze pointer
@@ -46,4 +47,13 @@ func ListContains[T comparable](list []T, val T) bool {
 		}
 	}
 	return false
+}
+
+func LowerFirstChar(str string) string {
+	if str == "" {
+		return str
+	}
+	firstchar := []rune(str)[0]
+	firstchar = unicode.ToLower(firstchar)
+	return string(firstchar) + str[1:]
 }

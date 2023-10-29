@@ -2,17 +2,15 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/stofffe/vgen/util"
 )
 
 // vgen:[i]
 type Person struct {
-	Name  string    // vgen:[ req, not_empty, len_lt(20), custom(isBob) ]
-	Age   int       // vgen:[ req, gte(18), custom(driveAge) ]
-	Vibes bool      // vgen:[ req ]
-	Date  time.Time // vgen:[req]
+	Name  string // vgen:[ req, not_empty ]
+	Age   int    // vgen:[ req, gt=18, lt=22 ]
+	Vibes bool   // vgen:[ req ]
 }
 
 func driveAge(t int) error {

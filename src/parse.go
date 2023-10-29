@@ -5,99 +5,131 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log"
 	"regexp"
 	"strings"
+
+	"github.com/stofffe/vgen/util"
 )
 
 type ParseInfo struct {
-	Package string
-	Types   []Type
-	Imports []string
+	Package     string
+	StructTypes []StructType
+	Imports     []string
 }
 
-// types
-type Type interface {
-	isType()
-}
 type StructType struct {
-	Name   string
-	Fields []Field
+	name   string
+	fields []StructField
 }
 
-func (t StructType) isType() {}
+func (f StructType) Name() string          { return f.name }
+func (f StructType) LowerName() string     { return util.LowerFirstChar(f.name) }
+func (f StructType) Fields() []StructField { return f.fields }
 
-// field
+type StructField struct {
+	name     string
+	required bool
+	field    Field
+}
+
+func (f StructField) Name() string      { return f.name }
+func (f StructField) LowerName() string { return util.LowerFirstChar(f.name) }
+func (f StructField) Field() Field      { return f.field }
+func (f StructField) Required() bool    { return f.required }
+
 type Field interface {
-	isField()
 	Typ() string
-	FieldValidationCode() (string, error)
+	Code() (string, error)
 }
-type PrimitiveField struct {
-	Name     string
-	typ      string
-	Rules    []Rule
-	Required bool
+
+type PrimField struct {
+	name  string
+	typ   string
+	rules []Rule
 }
+
 type ListField struct {
-	Name       string
-	innerType  string
-	ListRules  []Rule
-	ValueRules []Rule
-	Required   bool
+	name  string
+	inner Field
+	depth int
+	rules []Rule
 }
+
+func (f ListField) Inner() Field {
+	return f.inner
+}
+func (f ListField) Depth() int {
+	return f.depth
+}
+
 type TypeField struct {
-	Name     string
-	typ      string
-	Rules    []Rule
-	Required bool
+	name  string
+	typ   string
+	rules []Rule
 }
 
-func (f PrimitiveField) Typ() string {
-	return f.typ
-}
-func (f TypeField) Typ() string {
-	return f.typ + "Vgen"
-}
-func (f ListField) Typ() string {
-	return "[]" + f.innerType
-}
+func (f PrimField) Typ() string { return f.typ }
+func (f TypeField) Typ() string { return f.typ + "Vgen" }
+func (f ListField) Typ() string { return "[]" + f.inner.Typ() }
 
-func (f PrimitiveField) isField() {}
-func (f ListField) isField()      {}
-func (f TypeField) isField()      {}
+func (f PrimField) Name() string { return f.name }
+func (f TypeField) Name() string { return f.name }
+func (f ListField) Name() string { return f.name }
 
-// rule
-type Rule interface {
-	isRule()
-	RuleValidationCode() (string, error)
-}
-type PrimitiveRule struct {
-	FieldName string
-	Func      string
-	Value     string
-}
-type ListRule struct {
-	FieldName string
-	Func      string
-	Value     string
-}
+func (f PrimField) LowerName() string { return util.LowerFirstChar(f.name) }
+func (f TypeField) LowerName() string { return util.LowerFirstChar(f.name) }
+func (f ListField) LowerName() string { return util.LowerFirstChar(f.name) }
 
-func (t ListRule) isRule()      {}
-func (t PrimitiveRule) isRule() {}
+// func (f PrimField) HasRules() bool { return len(f.rules.rules) > 0 }
+// func (f TypeField) HasRules() bool { return len(f.rules.rules) > 0 }
+// func (f ListField) HasRules() bool { return len(f.rules.rules) > 0 }
+
+func (f PrimField) Rules() []Rule { return f.rules }
+func (f TypeField) Rules() []Rule { return f.rules }
+func (f ListField) Rules() []Rule { return f.rules }
 
 type Tags struct {
 	Include bool
 }
 
 type Rules struct {
-	FieldName      string
-	Typ            string
-	Include        bool
-	Required       bool
-	PrimitiveRules []Rule
-	ListRules      []Rule
+	name     string
+	include  bool
+	required bool
+	rules    [][]Rule
 }
+
+// func (r Rules) Name() string      { return r.name }
+// func (f Rules) LowerName() string { return util.LowerFirstChar(f.name) }
+// func (r Rules) Include() bool     { return r.include }
+// func (r Rules) Required() bool    { return r.required }
+// func (r Rules) Rules() []Rule {
+// 	return r.rules[r.depth]
+// }
+
+type Rule struct {
+	name  string
+	rule  string
+	param string
+	depth int
+}
+
+func (r Rule) Name() string      { return r.name }
+func (r Rule) LowerName() string { return util.LowerFirstChar(r.name) }
+func (r Rule) Param() string     { return r.param }
+func (r Rule) Path() string {
+	inner := r.LowerName()
+	args := ""
+	for i := 0; i < r.depth; i++ {
+		inner += "[%d]"
+		args += fmt.Sprintf(", i%d", i)
+	}
+	return fmt.Sprintf(`fmt.Sprintf("%s"%s)`, inner, args)
+}
+
+// func (r Rule) Rule() string  { return r.rule }
+
+const DEBUG = false
 
 func parseFile(path string) (ParseInfo, error) {
 	// load file
@@ -109,14 +141,16 @@ func parseFile(path string) (ParseInfo, error) {
 	}
 
 	// debug print
-	err = ast.Print(fset, file)
-	if err != nil {
-		return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
+	if DEBUG {
+		err = ast.Print(fset, file)
+		if err != nil {
+			return ParseInfo{}, fmt.Errorf("could not print ast: %v", err)
+		}
 	}
 
 	// parse
 	var file_err error
-	var types []Type
+	var types []StructType
 	ast.Inspect(file, func(n ast.Node) bool {
 		if node, ok := n.(*ast.GenDecl); ok {
 			parsed_types, err := parseGenDecl(node)
@@ -135,248 +169,164 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, file_err
 	}
 
+	if DEBUG {
+		fmt.Println(types)
+	}
+
 	// package
 	package_name := file.Name.Name
 
 	return ParseInfo{
-		Package: package_name,
-		Types:   types,
-		Imports: []string{"encoding/json", "fmt"},
+		Package:     package_name,
+		StructTypes: types,
+		Imports:     []string{"encoding/json", "fmt"},
 	}, nil
 
 }
 
-func parseGenDecl(node *ast.GenDecl) ([]Type, error) {
-	// check for tag
-	if node.Doc == nil {
-		return []Type{}, nil
-	}
-	hasTag := false
-	for _, comment := range node.Doc.List {
-		// TODO split func into tags and rules?
-		tags, err := parseTags(comment.Text)
-		if err != nil {
-			return nil, fmt.Errorf("invalid tags for type: %v", tags)
-		}
-		hasTag = tags.Include
-	}
-	if !hasTag {
-		return []Type{}, nil
-	}
-
+func parseGenDecl(node *ast.GenDecl) ([]StructType, error) {
 	// check if type
 	if node.Tok != token.TYPE {
-		return []Type{}, nil
+		return []StructType{}, nil
+	}
+
+	if node.Doc != nil {
+		tags := parseTags(node.Doc.Text())
+		if !tags.Include {
+			return []StructType{}, nil
+		}
 	}
 
 	// parse all types under decl
-	var structs []Type
+	var structs []StructType
 	for _, spec := range node.Specs {
 		type_node := spec.(*ast.TypeSpec) // already checked
 
 		s, err := parseType(type_node)
 		structs = append(structs, s)
 		if err != nil {
-			return []Type{}, fmt.Errorf("could not parse type: %v", err)
+			return []StructType{}, fmt.Errorf("could not parse type: %v", err)
 		}
 	}
 
 	return structs, nil
 }
 
-func parseType(node *ast.TypeSpec) (Type, error) {
+func parseType(node *ast.TypeSpec) (StructType, error) {
 	// check name
 	if node.Name == nil {
-		return nil, fmt.Errorf("must have name")
+		return StructType{}, fmt.Errorf("must have name")
 	}
 
 	switch t := node.Type.(type) {
 	case *ast.StructType:
 		return parseStructType(t, node.Name.Name)
 	default:
-		return nil, fmt.Errorf("unsupported type %T", t)
+		return StructType{}, fmt.Errorf("unsupported type %T", t)
 	}
 }
 
-func parseStructType(node *ast.StructType, name string) (Type, error) {
+func parseStructType(node *ast.StructType, name string) (StructType, error) {
 	if node.Fields == nil || len(node.Fields.List) == 0 {
-		return nil, fmt.Errorf("empty structs not supported")
+		return StructType{}, fmt.Errorf("empty structs not supported")
 	}
 
 	// parse
 	struct_type := StructType{
-		Name:   name,
-		Fields: []Field{},
+		name:   name,
+		fields: []StructField{},
 	}
 	for _, field_node := range node.Fields.List {
-		field, err := parseField(field_node)
+		field, err := parseStructField(field_node)
 		if err != nil {
 			return StructType{}, fmt.Errorf("could not parse field: %v", err)
 		}
-		struct_type.Fields = append(struct_type.Fields, field)
+		struct_type.fields = append(struct_type.fields, field)
 	}
 
 	return struct_type, nil
 
 }
 
-func parseField(node *ast.Field) (Field, error) {
-	// check name
-	if len(node.Names) == 0 {
-		return nil, fmt.Errorf("field without name not supported")
-	}
-	if len(node.Names) > 1 {
-		return nil, fmt.Errorf("field with multiple names not supported")
-	}
+func parseStructField(node *ast.Field) (StructField, error) {
 	name := node.Names[0].Name
 
-	// extract rules from comment
-	var comment string
+	var rules Rules
+	var err error
 	if node.Comment != nil {
-		if len(node.Comment.List) > 1 {
-			log.Fatalf("HOW CAN THIS BE > 1?")
+		rules, err = parseRules(node.Comment.Text(), name)
+		if err != nil {
+			return StructField{}, fmt.Errorf("could not parse rules on %v: %v", name, err)
 		}
-		comment = node.Comment.List[0].Text
 	}
 
 	// parse
-	var field Field
-	switch n := node.Type.(type) {
+	field, err := parseField(node.Type, name, rules.rules, 0)
+	if err != nil {
+		return StructField{}, fmt.Errorf("could not parse field: %v", err)
+	}
+
+	return StructField{
+		name:     name,
+		field:    field,
+		required: rules.required,
+	}, nil
+}
+
+func parseField(node ast.Expr, name string, rules [][]Rule, depth int) (Field, error) {
+	for len(rules) <= depth {
+		rules = append(rules, []Rule{})
+	}
+
+	switch n := node.(type) {
 	case *ast.Ident:
 		typ := n.Name
-		rules, err := parseRules(name, typ, comment)
-		if err != nil {
-			return nil, fmt.Errorf("invalid tags for field: %v", err)
-		}
-
-		if rules.Include {
-			field = TypeField{
-				Name:     name,
-				typ:      n.Name,
-				Rules:    rules.PrimitiveRules,
-				Required: rules.Required,
-			}
-		} else {
-			field = PrimitiveField{
-				Name:     name,
-				typ:      typ,
-				Rules:    rules.PrimitiveRules,
-				Required: rules.Required,
-			}
-		}
-
+		// if rules.include {
+		// 	return TypeField{
+		// 		name:  name,
+		// 		typ:   typ,
+		// 		rules: rules,
+		// 	}, nil
+		// } else {
+		return PrimField{
+			name:  name,
+			typ:   typ,
+			rules: rules[depth],
+		}, nil
+		// }
 	case *ast.ArrayType:
-		// type
-		inner_type, ok := n.Elt.(*ast.Ident)
-		if !ok {
-			return nil, fmt.Errorf("type of array must be primitive not: %T", n.Elt)
-		}
-		rules, err := parseRules(name, inner_type.Name, comment)
+		inner, err := parseField(n.Elt, name, rules, depth+1)
 		if err != nil {
-			return nil, fmt.Errorf("invalid tags for field: %v", err)
+			return nil, fmt.Errorf("could not parse arrays inner type: %v", err)
 		}
-		field = ListField{
-			Name:       rules.FieldName,
-			innerType:  inner_type.Name,
-			ListRules:  rules.PrimitiveRules,
-			ValueRules: rules.ListRules,
-			Required:   rules.Required,
-		}
-
+		return ListField{
+			name:  name,
+			inner: inner,
+			rules: rules[depth],
+			depth: depth,
+		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported field type: %T", n)
+		return nil, fmt.Errorf("unsupported expression: %T", node)
 	}
-
-	return field, nil
 }
 
-func parseRules(name, typ, comment string) (Rules, error) {
-	// extract tags
-	reg := regexp.MustCompile(`vgen:\[(.+)\]`)
-	matches := reg.FindStringSubmatch(comment)
-
-	if len(matches) == 0 {
-		return Rules{}, nil
-	}
-
-	content := matches[1]
-	content = strings.ReplaceAll(content, " ", "") // first match is whole string
-	split := strings.Split(content, ",")
-
-	tags := Rules{
-		FieldName: name,
-		Typ:       typ,
-	}
-	for _, tag := range split {
-		split := strings.Split(tag, "=")
-		rule := strings.ReplaceAll(split[0], " ", "")
-		param := ""
-		if len(split) > 1 {
-			param = strings.ReplaceAll(split[1], " ", "")
-
-		}
-
-		switch rule {
-		// special rule
-		case "i":
-			tags.Include = true
-			continue
-		// special rule
-		case "req":
-			tags.Required = true
-			continue
-		case "not_empty", "custom", "len_gt", "len_gte", "len_lt", "len_lte", "gt", "gte", "lt", "lte":
-			// if !(typ == "string" || strings.HasPrefix(rule, "[]")) {
-			// 	return Tags{}, fmt.Errorf("")
-			// }
-			tags.PrimitiveRules = append(tags.PrimitiveRules, PrimitiveRule{
-				FieldName: name,
-				Func:      rule,
-				Value:     param,
-			})
-			continue
-		case ":not_empty", ":custom", ":len_gt", ":len_gte", ":len_lt", ":len_lte", ":gt", ":gte", ":lt", ":lte":
-			tags.ListRules = append(tags.ListRules, ListRule{
-				FieldName: name,
-				Func:      rule,
-				Value:     param,
-			})
-			continue
-		default:
-			return Rules{}, fmt.Errorf("invalid rule: %v", rule)
-		}
-
-	}
-	return tags, nil
+func extract(comment string) string {
+	reg := regexp.MustCompile(`vgen:\[.+\]`)
+	match := reg.FindString(comment)
+	match = strings.TrimPrefix(match, "vgen:[")
+	match = strings.TrimSuffix(match, "]")
+	match = strings.ReplaceAll(match, " ", "")
+	return match
 }
-
-func parseTags(comment string) (Tags, error) {
-	split := extract(comment)
-
+func parseTags(comment string) Tags {
+	extracted := extract(comment)
 	var tags Tags
-	for _, tag := range split {
-		switch tag {
-		// special rule
+	split := strings.Split(extracted, "|")
+	for _, t := range split {
+		switch t {
 		case "i":
 			tags.Include = true
-			continue
-		default:
-			return Tags{}, fmt.Errorf("invalid tag: %v", tag)
 		}
 	}
-	return tags, nil
-}
-
-func extract(comment string) []string {
-	// extract tags
-	reg := regexp.MustCompile(`vgen:\[(.+)\]`)
-	matches := reg.FindStringSubmatch(comment)
-	if len(matches) == 0 {
-		return []string{}
-	}
-
-	content := matches[1]
-	content = strings.ReplaceAll(content, " ", "") // first match is whole string
-	return strings.Split(content, ",")
-
+	return tags
 }

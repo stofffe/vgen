@@ -1,135 +1,59 @@
-{{/* PRIMITIVE */}}
-
-
-{{ define "req" }} {{ end }}
-
-{{ define "len_gt" }}
-if !(len({{ lowerFirstFunc .FieldName }}) > {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`len must be greater than {{ .Value }}`))
-}
-{{ end }}
-
-{{ define "len_lt" }}
-if !(len({{ lowerFirstFunc .FieldName }}) < {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`len must be less than {{ .Value }}`))
-}
-{{ end }}
-
-{{ define "len_gte" }}
-if !(len({{ lowerFirstFunc .FieldName }}) >= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`len must be greater than or equal to {{ .Value }}`))
-}
-{{ end }}
-
-{{ define "len_lte" }}
-if !(len({{ lowerFirstFunc .FieldName }}) <= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`len must be less than or equal to {{ .Value }}`))
-}
+{{ define "req" }}
 {{ end }}
 
 {{ define "not_empty" }}
-if !(len({{ lowerFirstFunc .FieldName }}) > 0) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`can not be empty`))
-}
-{{ end }}
-
-
-{{ define "gt" }}
-if !({{ lowerFirstFunc .FieldName }} > {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`must be greater than {{ .Value }}`))
-}
-{{ end }}
-
-{{ define "lt" }}
-if !({{ lowerFirstFunc .FieldName }} < {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`must be less than {{ .Value }}`))
-}
-{{ end }}
-
-{{ define "gte" }}
-if !({{ lowerFirstFunc .FieldName }} >= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`must be greater than or equal to {{ .Value }}`))
-}
-{{ end }}
-
-{{ define "lte" }}
-if !({{ lowerFirstFunc .FieldName }} <= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`must be less than or equal to {{ .Value }}`))
+if !(len({{ .LowerName }}) > 0) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("can not be empty"))
 }
 {{ end }}
 
 {{ define "custom" }}
-if err := {{ .Value }}({{ lowerFirstFunc .FieldName}}); err != nil {
-    errs["{{ lowerFirstFunc .FieldName }}"] = append(errs["{{ lowerFirstFunc .FieldName }}"], fmt.Sprintf(`%v`, err))
+{{ end }}
+
+{{ define "gt" }}
+if !({{ .LowerName }} > {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be > {{ .Param }}"))
 }
 {{ end }}
 
-{{/* NESTED */}}
-
-{{ define "i" }} {{ end }}
-
-{{/* LIST */}}
-
-
-{{ define ":req" }} {{ end }}
-
-{{ define ":len_gt" }}
-if !(len({{ lowerFirstFunc .FieldName }}) > {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`len must be greater than {{ .Value }}`))
+{{ define "lt" }}
+if !({{ .LowerName }} < {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be < {{ .Param }}"))
 }
 {{ end }}
 
-{{ define ":len_lt" }}
-if !(len({{ lowerFirstFunc .FieldName }}) < {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`len must be less than {{ .Value }}`))
+{{ define "gte" }}
+if !({{ .LowerName }} >= {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be >= {{ .Param }}"))
 }
 {{ end }}
 
-{{ define ":len_gte" }}
-if !(len({{ lowerFirstFunc .FieldName }}) >= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`len must be greater than or equal to {{ .Value }}`))
+{{ define "lte" }}
+if !({{ .LowerName }} <= {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be <= {{ .Param }}"))
 }
 {{ end }}
 
-{{ define ":len_lte" }}
-if !(len({{ lowerFirstFunc .FieldName }}) <= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`len must be less than or equal to {{ .Value }}`))
+{{ define "len_gt" }}
+if !(len({{ .LowerName }}) > {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be > {{ .Param }}"))
 }
 {{ end }}
 
-{{ define ":not_empty" }}
-if !(len({{ lowerFirstFunc .FieldName }}) > 0) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`can not be empty`))
+{{ define "len_lt" }}
+if !(len({{ .LowerName }}) < {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be < {{ .Param }}"))
 }
 {{ end }}
 
-{{ define ":gt" }}
-if !({{ lowerFirstFunc .FieldName }} > {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`must be greater than {{ .Value }}`))
+{{ define "len_gte" }}
+if !(len({{ .LowerName }}) >= {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be >= {{ .Param }}"))
 }
 {{ end }}
 
-{{ define ":lt" }}
-if !({{ lowerFirstFunc .FieldName }} < {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`must be less than {{ .Value }}`))
+{{ define "len_lte" }}
+if !(len({{ .LowerName }}) >= {{ .Param }}) {
+    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be >= {{ .Param }}"))
 }
 {{ end }}
-
-{{ define ":gte" }}
-if !({{ lowerFirstFunc .FieldName }} >= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`must be greater than or equal to {{ .Value }}`))
-}
-{{ end }}
-
-{{ define ":lte" }}
-if !({{ lowerFirstFunc .FieldName }} <= {{ .Value }}) {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`must be less than or equal to {{ .Value }}`))
-}
-{{ end }}
-
-{{ define ":custom" }}
-if err := {{ .Value }}({{ lowerFirstFunc .FieldName}}); err != nil {
-    errs["{{ lowerFirstFunc .FieldName }}" + index] = append(errs["{{ lowerFirstFunc .FieldName }}" + index], fmt.Sprintf(`%v`, err))
-}
-{{ end }}
-
