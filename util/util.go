@@ -39,16 +39,6 @@ func DebugPrintString(name string, val string) {
 	DebugPrintAny(name, unmarshalled)
 }
 
-// check if a list contains a specific value
-func ListContains[T comparable](list []T, val T) bool {
-	for _, v := range list {
-		if v == val {
-			return true
-		}
-	}
-	return false
-}
-
 func LowerFirstChar(str string) string {
 	if str == "" {
 		return str

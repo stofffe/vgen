@@ -8,10 +8,6 @@ import (
 )
 
 func main() {
-	// input := "asdaskdas vgen:[req, gt=3][len_gt=5, custom=abc][not_empty]   dssadassd"
-	// test(input)
-	// return
-
 	// require file path
 	if len(os.Args) < 2 {
 		log.Fatal("must supply file path")
@@ -41,5 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%v\n", string(buffer))
+	if DEBUG {
+		fmt.Printf("%v\n", string(buffer))
+	}
 }
