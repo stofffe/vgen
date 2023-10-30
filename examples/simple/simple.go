@@ -13,14 +13,8 @@ type Person struct {
 	Vibes bool   // vgen:[ req ]
 }
 
-//	func driveAge(t int) error {
-//		if t < 18 {
-//			return fmt.Errorf("must be at least 18")
-//		}
-//		return nil
-//	}
 func isBob(t string) error {
-	if t != "Bob" {
+	if t != "bob" {
 		return fmt.Errorf("must be Bob")
 	}
 	return nil
@@ -28,7 +22,7 @@ func isBob(t string) error {
 
 func main() {
 	person, err := PersonVgen{
-		Name:  util.InitP("bob"),
+		Name:  util.InitP("helo"),
 		Age:   util.InitP(17),
 		Vibes: nil,
 	}.Validate()

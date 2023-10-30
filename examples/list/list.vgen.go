@@ -64,8 +64,11 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 				errs[fmt.Sprintf("a[%d]", i0)] = append(errs[fmt.Sprintf("a[%d]", i0)], fmt.Sprintf("len must be > 1"))
 			}
 			for i1, a := range a {
-				if !(len(a) >= 2) {
-					errs[fmt.Sprintf("a[%d][%d]", i0, i1)] = append(errs[fmt.Sprintf("a[%d][%d]", i0, i1)], fmt.Sprintf("len must be >= 2"))
+				if err := isBob(a); err != nil {
+					errs[fmt.Sprintf("a[%d][%d]", i0, i1)] = append(errs[fmt.Sprintf("a[%d][%d]", i0, i1)], err.Error())
+				}
+				if !(len(a) > 0) {
+					errs[fmt.Sprintf("a[%d][%d]", i0, i1)] = append(errs[fmt.Sprintf("a[%d][%d]", i0, i1)], fmt.Sprintf("can not be empty"))
 				}
 				_ = a // No rules fix
 				_ = i1

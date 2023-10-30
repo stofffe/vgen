@@ -237,6 +237,11 @@ func (p *Parser) expectRules() error {
 }
 
 func (p *Parser) expectRule() error {
+	// handle empty
+	if p.Peek().typ == RIGHT_BRACE {
+		return nil
+	}
+
 	token, err := p.expectToken(IDENT)
 	if err != nil {
 		return err
@@ -268,8 +273,7 @@ func (p *Parser) expectRule() error {
 		return fmt.Errorf("unexpected rule %s", rule)
 	}
 
-	token = p.Peek()
-	if token.typ == COMMA {
+	if p.Peek().typ == COMMA {
 		p.Consume()
 		return p.expectRule()
 	}
@@ -282,6 +286,11 @@ func (p *Parser) expectNoArgRule(rule string) error {
 		p.rules.required = true
 	case "i", "include":
 		p.rules.include = true
+		p.AddRule(Rule{
+			name:  p.name,
+			rule:  rule,
+			depth: p.depth,
+		})
 	default:
 		p.AddRule(Rule{
 			name:  p.name,

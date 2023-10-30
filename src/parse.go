@@ -261,7 +261,7 @@ func parseStructField(node *ast.Field) (StructField, error) {
 	}
 
 	// parse
-	field, err := parseField(node.Type, name, rules.rules, 0)
+	field, err := parseField(node.Type, name, rules.include, rules.rules, 0)
 	if err != nil {
 		return StructField{}, fmt.Errorf("could not parse field: %v", err)
 	}
@@ -273,7 +273,7 @@ func parseStructField(node *ast.Field) (StructField, error) {
 	}, nil
 }
 
-func parseField(node ast.Expr, name string, rules [][]Rule, depth int) (Field, error) {
+func parseField(node ast.Expr, name string, include bool, rules [][]Rule, depth int) (Field, error) {
 	for len(rules) <= depth {
 		rules = append(rules, []Rule{})
 	}
@@ -281,21 +281,21 @@ func parseField(node ast.Expr, name string, rules [][]Rule, depth int) (Field, e
 	switch n := node.(type) {
 	case *ast.Ident:
 		typ := n.Name
-		// if rules.include {
-		// 	return TypeField{
-		// 		name:  name,
-		// 		typ:   typ,
-		// 		rules: rules,
-		// 	}, nil
-		// } else {
-		return PrimField{
-			name:  name,
-			typ:   typ,
-			rules: rules[depth],
-		}, nil
-		// }
+		if include {
+			return TypeField{
+				name:  name,
+				typ:   typ,
+				rules: rules[depth],
+			}, nil
+		} else {
+			return PrimField{
+				name:  name,
+				typ:   typ,
+				rules: rules[depth],
+			}, nil
+		}
 	case *ast.ArrayType:
-		inner, err := parseField(n.Elt, name, rules, depth+1)
+		inner, err := parseField(n.Elt, name, include, rules, depth+1)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse arrays inner type: %v", err)
 		}

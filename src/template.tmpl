@@ -36,10 +36,11 @@ func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
 
     {{ range .Fields }}
     if t.{{ .Name }} != nil {
-        {{ .LowerName }} := *t.{{ .Name }} // TODO not working for 0 rules
 
+    {{ .LowerName }} := *t.{{ .Name }} // TODO not working for 0 rules
+    {
         {{ .Field.Code }}
-        
+    }       
     } {{ if .Required }} else {
         errs["{{ .LowerName }}"] = append(errs["{{ .LowerName }}"], fmt.Sprintf("required"))
     } {{ end }}
@@ -59,7 +60,7 @@ func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
         {{ .Code }} 
     {{ end }}
 {{ end }}
-    _ = {{ .LowerName }} // No rules fix
+ _ = {{ .LowerName }} // No rules fix
 {{ end }}
 
 {{ define "list-field-validation"}}
@@ -73,6 +74,9 @@ for i{{ .Depth }}, {{ .LowerName }} := range {{ .LowerName }} {
 {{ end }}
 
 {{ define "type-field-validation"}}
-// TYPE
+{{ if .Rules }}
+    {{ range .Rules }}
+        {{ .Code }} 
+    {{ end }}
 {{ end }}
-
+{{ end }}

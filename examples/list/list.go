@@ -12,7 +12,14 @@ type Person struct {
 	Age       int        // vgen:[ gte=18 ]
 	Vibes     bool       // vgen:[ ]
 	Nicknames []string   // vgen:[ len_gt=3 ][ not_empty ]
-	A         [][]string // vgen:[ not_empty ][ len_gt=1 ][ len_gte=2 ]
+	A         [][]string // vgen:[ not_empty ][ len_gt=1 ][ custom=isBob, not_empty ]
+}
+
+func isBob(t string) error {
+	if t != "bob" {
+		return fmt.Errorf("must be bob")
+	}
+	return nil
 }
 
 func main() {
@@ -21,7 +28,7 @@ func main() {
 		Age:       util.InitP(17),
 		Vibes:     nil,
 		Nicknames: util.InitP([]string{"hello", "", "abc", "noooooooooooooooooo"}),
-		A:         util.InitP([][]string{{"abc"}, {"123", "yo"}, {"no", ""}}),
+		A:         util.InitP([][]string{{"abc"}, {"bob", "yo"}, {"bob", ""}}),
 	}.Validate()
 	if err != nil {
 		util.DebugPrintString("err", err.Error())

@@ -2,26 +2,26 @@ build:
 	@go build -o bin/vgen src/*.go
 	@echo "binary created in bin/vgen"
 
-example_test1:
-	@go run examples/test1/*.go
+compile_simple:
+	@make build && ./bin/vgen examples/simple/simple.go
+run_simple:
+	@go run examples/simple/*.go
+all_simple:
+	@make compile_simple
+	@make run_simple
 
-example_test2:
-	@go run examples/test2/*.go
+compile_list:
+	@make build && ./bin/vgen examples/list/list.go
+run_list:
+	@go run examples/list/*.go
+all_list:
+	@make compile_list
+	@make run_list
 
-example_test3:
-	@go run examples/test3/*.go
-
-example_test4:
-	@go run examples/test4/*.go
-
-all_test1:
-	@make build && ./bin/vgen examples/test1/test1.go && make example_test1
-
-all_test2:
-	@make build && ./bin/vgen examples/test2/test2.go && make example_test2
-
-all_test3:
-	@make build && ./bin/vgen examples/test3/test3.go && make example_test3
-
-all_test4:
-	@make build && ./bin/vgen examples/test4/test4.go && make example_test4
+compile_types:
+	@make build && ./bin/vgen examples/types/types.go
+run_types:
+	@go run examples/types/*.go
+all_types:
+	@make compile_types
+	@make run_types

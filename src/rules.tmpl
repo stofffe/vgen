@@ -1,4 +1,16 @@
 {{ define "req" }}
+AAAAAAAAAA
+{{ end }}
+
+{{ define "i" }}
+// TYPE
+{{ .LowerName }}, struct_errs := {{ .LowerName }}.InnerValidation()
+for path, err_list := range struct_errs {
+    for _, err := range err_list {
+        errs[{{ .Path }} + "." + path] = append(errs[{{ .Path }} + "." + path], err) 
+    }    
+}
+_ = {{ .LowerName }} // No rules fix
 {{ end }}
 
 {{ define "not_empty" }}
