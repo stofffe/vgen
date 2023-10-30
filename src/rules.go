@@ -249,21 +249,25 @@ func (p *Parser) expectRule() error {
 
 	rule := token.value
 	switch rule {
+	// Special rule
 	case "req", "required", "i", "include":
 		err := p.expectNoArgRule(rule)
 		if err != nil {
 			return err
 		}
+	// No args rule
 	case "not_empty":
 		err := p.expectNoArgRule(rule)
 		if err != nil {
 			return err
 		}
+	// Decimal rule
 	case "gt", "lt", "gte", "lte", "len_gt", "len_gte", "len_lt", "len_lte":
 		err := p.expectDecimalRule(rule)
 		if err != nil {
 			return err
 		}
+	// Ident rule
 	case "custom":
 		err := p.expectIdentRule(rule)
 		if err != nil {

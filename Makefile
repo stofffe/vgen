@@ -25,3 +25,11 @@ run_types:
 all_types:
 	@make compile_types
 	@make run_types
+
+compile_advanced:
+	@make build && ./bin/vgen examples/advanced/advanced.go
+run_advanced:
+	@go run examples/advanced/*.go
+all_advanced:
+	@make compile_advanced
+	@make run_advanced

@@ -1,0 +1,8 @@
+Simplified BNF for rule parsing
+
+<rules> ::= [<rule>]<rules> | empty
+<rule> ::=   <argrule>, <rule> | <noargrule>, <rule> |  empty
+<noargrule> ::= <string>
+<argrule> ::= <numrule> | <stringrule>
+<numrule> ::= <string> = <number>
+<stringrule> ::= <string = <string>
