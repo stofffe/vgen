@@ -7,24 +7,16 @@ import (
 )
 
 // vgen:[i]
-type Person struct {
-	Name  string // vgen:[ req, not_empty , custom=isBob]
-	Age   int    // vgen:[ req, gt=18, lt=22 ]
-	Vibes bool   // vgen:[ req ]
-}
-
-func isBob(t string) error {
-	if t != "bob" {
-		return fmt.Errorf("must be Bob")
-	}
-	return nil
+type Email struct {
+	Title  string // vgen:[ req, not_empty, len_lt=50 ]
+	Text   string // vgen:[ req, not_empty, len_gt=200 ]
+	Sender string // vgen:[ req, not_empty, len_lt=20 ]
 }
 
 func main() {
-	person, err := PersonVgen{
-		Name:  util.InitP("helo"),
-		Age:   util.InitP(17),
-		Vibes: nil,
+	person, err := EmailVgen{
+		Text:   util.InitP("hello"),
+		Sender: util.InitP(""),
 	}.Validate()
 	if err != nil {
 		util.DebugPrintString("err", err.Error())

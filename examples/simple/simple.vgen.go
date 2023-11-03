@@ -5,54 +5,66 @@ import (
 	"encoding/json"
 	"fmt"
 )
-type PersonVgen struct {
-	Name  *string
-	Age   *int
-	Vibes *bool
+type EmailVgen struct {
+	Title  *string
+	Text   *string
+	Sender *string
 }
-func (t PersonVgen) Validate() (Person, error) {
-	person, errs := t.InnerValidation()
+func (t EmailVgen) Validate() (Email, error) {
+	email, errs := t.InnerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
-		return Person{}, fmt.Errorf("%s", j)
+		return Email{}, fmt.Errorf("%s", j)
 	}
-	return person, nil
+	return email, nil
 }
-func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
-	res := Person{}
+func (t EmailVgen) InnerValidation() (Email, map[string][]string) {
+	res := Email{}
 	errs := make(map[string][]string)
-	if t.Name != nil {
-		name := *t.Name // TODO not working for 0 rules
-		if !(len(name) > 0) {
-			errs[fmt.Sprintf("name")] = append(errs[fmt.Sprintf("name")], fmt.Sprintf("can not be empty"))
+	if t.Title != nil {
+		title := *t.Title
+		{
+			if !(len(title) > 0) {
+				errs[fmt.Sprintf("title")] = append(errs[fmt.Sprintf("title")], fmt.Sprintf("can not be empty"))
+			}
+			if !(len(title) < 50) {
+				errs[fmt.Sprintf("title")] = append(errs[fmt.Sprintf("title")], fmt.Sprintf("len must be < 50"))
+			}
+			_ = title
 		}
-		if err := isBob(name); err != nil {
-			errs[fmt.Sprintf("name")] = append(errs[fmt.Sprintf("name")], err.Error())
-		}
-		_ = name // No rules fix
 	} else {
-		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
+		errs["title"] = append(errs["title"], fmt.Sprintf("required"))
 	}
-	if t.Age != nil {
-		age := *t.Age // TODO not working for 0 rules
-		if !(age > 18) {
-			errs[fmt.Sprintf("age")] = append(errs[fmt.Sprintf("age")], fmt.Sprintf("must be > 18"))
+	if t.Text != nil {
+		text := *t.Text
+		{
+			if !(len(text) > 0) {
+				errs[fmt.Sprintf("text")] = append(errs[fmt.Sprintf("text")], fmt.Sprintf("can not be empty"))
+			}
+			if !(len(text) > 200) {
+				errs[fmt.Sprintf("text")] = append(errs[fmt.Sprintf("text")], fmt.Sprintf("len must be > 200"))
+			}
+			_ = text
 		}
-		if !(age < 22) {
-			errs[fmt.Sprintf("age")] = append(errs[fmt.Sprintf("age")], fmt.Sprintf("must be < 22"))
-		}
-		_ = age // No rules fix
 	} else {
-		errs["age"] = append(errs["age"], fmt.Sprintf("required"))
+		errs["text"] = append(errs["text"], fmt.Sprintf("required"))
 	}
-	if t.Vibes != nil {
-		vibes := *t.Vibes // TODO not working for 0 rules
-		_ = vibes // No rules fix
+	if t.Sender != nil {
+		sender := *t.Sender
+		{
+			if !(len(sender) > 0) {
+				errs[fmt.Sprintf("sender")] = append(errs[fmt.Sprintf("sender")], fmt.Sprintf("can not be empty"))
+			}
+			if !(len(sender) < 20) {
+				errs[fmt.Sprintf("sender")] = append(errs[fmt.Sprintf("sender")], fmt.Sprintf("len must be < 20"))
+			}
+			_ = sender
+		}
 	} else {
-		errs["vibes"] = append(errs["vibes"], fmt.Sprintf("required"))
+		errs["sender"] = append(errs["sender"], fmt.Sprintf("required"))
 	}
 	if len(errs) > 0 {
-		return Person{}, errs
+		return Email{}, errs
 	}
 	return res, nil
 }

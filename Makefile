@@ -10,6 +10,14 @@ all_simple:
 	@make compile_simple
 	@make run_simple
 
+compile_custom:
+	@make build && ./bin/vgen examples/custom/custom.go
+run_custom:
+	@go run examples/custom/*.go
+all_custom:
+	@make compile_custom
+	@make run_custom
+
 compile_list:
 	@make build && ./bin/vgen examples/list/list.go
 run_list:
