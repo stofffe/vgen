@@ -41,3 +41,11 @@ run_advanced:
 all_advanced:
 	@make compile_advanced
 	@make run_advanced
+
+compile_json:
+	@make build && ./bin/vgen examples/json/json.go
+run_json:
+	@go run examples/json/*.go
+all_json:
+	@make compile_json
+	@make run_json
