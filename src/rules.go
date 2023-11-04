@@ -9,11 +9,11 @@ import (
 
 // String to rules
 
-func parseRules(input string, name string) (Rules, error) {
+func parseRules(input string, name, alias string) (Rules, error) {
 	lexer := NexLexer(input)
 	lexer.Lex()
 
-	parser := NewParser(lexer, name)
+	parser := NewParser(lexer, name, alias)
 	err := parser.Parse()
 	if err != nil {
 		return Rules{}, fmt.Errorf("could not parse rules: %v", err)
@@ -65,6 +65,8 @@ const (
 	EQUAL
 	IDENT
 	NUMBER
+	COLON
+	QUOTE
 )
 
 var TOKEN_NAMES = map[TokenType]string{
@@ -75,6 +77,8 @@ var TOKEN_NAMES = map[TokenType]string{
 	EQUAL:       "EQUAL",
 	IDENT:       "IDENT",
 	NUMBER:      "NUMBER",
+	COLON:       "COLON",
+	QUOTE:       "QUOTE",
 }
 
 func (t TokenType) String() string {
@@ -96,8 +100,13 @@ func (l *Lexer) Lex() {
 
 		// Rules
 		if unicode.IsLetter(l.Peek()) {
-			l.LexRule()
+			l.LexString()
 			continue
+		}
+
+		// Custom
+		if l.Peek() == '"' {
+
 		}
 
 		// Single chars
@@ -111,11 +120,17 @@ func (l *Lexer) Lex() {
 			l.AddToken(Token{typ: COMMA})
 		case '=':
 			l.AddToken(Token{typ: EQUAL})
+		case ':':
+			l.AddToken(Token{typ: COLON})
 		default:
 			l.AddToken(Token{typ: ILLEGAL, value: string(n)})
 			return
 		}
 	}
+}
+
+func (l *Lexer) LexQuote() {
+
 }
 
 func (l *Lexer) LexNumber() {
@@ -129,7 +144,7 @@ func (l *Lexer) LexNumber() {
 	})
 }
 
-func (l *Lexer) LexRule() {
+func (l *Lexer) LexString() {
 	rule := []rune{}
 	for l.InputLeft() && (l.Peek() == '_' || unicode.IsLetter(l.Peek())) {
 		rule = append(rule, l.Consume())
@@ -171,11 +186,13 @@ type Parser struct {
 	rules  Rules
 	depth  int
 	name   string
+	alias  string
 }
 
-func NewParser(lexer Lexer, name string) Parser {
+func NewParser(lexer Lexer, name string, alias string) Parser {
 	return Parser{
 		name:   name,
+		alias:  alias,
 		tokens: lexer.tokens, rules: Rules{
 			name:     name,
 			include:  false,
@@ -292,12 +309,14 @@ func (p *Parser) expectNoArgRule(rule string) error {
 		p.rules.include = true
 		p.AddRule(Rule{
 			name:  p.name,
+			alias: p.alias,
 			rule:  rule,
 			depth: p.depth,
 		})
 	default:
 		p.AddRule(Rule{
 			name:  p.name,
+			alias: p.alias,
 			rule:  rule,
 			depth: p.depth,
 		})
@@ -316,6 +335,7 @@ func (p *Parser) expectDecimalRule(rule string) error {
 	}
 	p.AddRule(Rule{
 		name:  p.name,
+		alias: p.alias,
 		rule:  rule,
 		param: token.value,
 		depth: p.depth,
@@ -334,6 +354,7 @@ func (p *Parser) expectIdentRule(rule string) error {
 	}
 	p.AddRule(Rule{
 		name:  p.name,
+		alias: p.alias,
 		rule:  rule,
 		param: token.value,
 		depth: p.depth,

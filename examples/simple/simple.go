@@ -8,9 +8,9 @@ import (
 
 // vgen:[i]
 type Email struct {
-	Title  string // vgen:[ req, not_empty, len_lt=50 ]
-	Text   string // vgen:[ req, not_empty, len_gt=200 ]
-	Sender string // vgen:[ req, not_empty, len_lt=20 ]
+	Title  string `json:"title"`  // vgen:[ req, not_empty, len_lt=50 ]
+	Text   string `json:"text"`   // vgen:[ req, not_empty, len_gt=200 ]
+	Sender string `json:"sender"` // vgen:[ req, not_empty, len_lt=20 ]
 }
 
 func main() {

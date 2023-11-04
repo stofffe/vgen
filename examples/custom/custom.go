@@ -8,9 +8,9 @@ import (
 
 // vgen:[i]
 type Person struct {
-	Name  string // vgen:[ req, not_empty , custom=isBob]
-	Age   int    // vgen:[ req, gt=18, lt=22 ]
-	Vibes bool   // vgen:[ req ]
+	Name  string `json:"name"`  // vgen:[ req, not_empty , custom=isBob]
+	Age   int    `json:"age"`   // vgen:[ req, gt=18, lt=22 ]
+	Vibes bool   `json:"vibes"` // vgen:[ req ]
 }
 
 func isBob(t string) error {

@@ -6,59 +6,59 @@ import (
 	"fmt"
 )
 type EmailVgen struct {
-	Title  *string
-	Text   *string
-	Sender *string
+	Title *string `json:"title"`
+	Text *string `json:"text"`
+	Sender *string `json:"sender"`
 }
 func (t EmailVgen) Validate() (Email, error) {
-	email, errs := t.InnerValidation()
+	_Email, errs := t.InnerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Email{}, fmt.Errorf("%s", j)
 	}
-	return email, nil
+	return _Email, nil
 }
 func (t EmailVgen) InnerValidation() (Email, map[string][]string) {
 	res := Email{}
 	errs := make(map[string][]string)
 	if t.Title != nil {
-		title := *t.Title
+		_Title := *t.Title
 		{
-			if !(len(title) > 0) {
+			if !(len(_Title) > 0) {
 				errs[fmt.Sprintf("title")] = append(errs[fmt.Sprintf("title")], fmt.Sprintf("can not be empty"))
 			}
-			if !(len(title) < 50) {
+			if !(len(_Title) < 50) {
 				errs[fmt.Sprintf("title")] = append(errs[fmt.Sprintf("title")], fmt.Sprintf("len must be < 50"))
 			}
-			_ = title
+			_ = _Title
 		}
 	} else {
 		errs["title"] = append(errs["title"], fmt.Sprintf("required"))
 	}
 	if t.Text != nil {
-		text := *t.Text
+		_Text := *t.Text
 		{
-			if !(len(text) > 0) {
+			if !(len(_Text) > 0) {
 				errs[fmt.Sprintf("text")] = append(errs[fmt.Sprintf("text")], fmt.Sprintf("can not be empty"))
 			}
-			if !(len(text) > 200) {
+			if !(len(_Text) > 200) {
 				errs[fmt.Sprintf("text")] = append(errs[fmt.Sprintf("text")], fmt.Sprintf("len must be > 200"))
 			}
-			_ = text
+			_ = _Text
 		}
 	} else {
 		errs["text"] = append(errs["text"], fmt.Sprintf("required"))
 	}
 	if t.Sender != nil {
-		sender := *t.Sender
+		_Sender := *t.Sender
 		{
-			if !(len(sender) > 0) {
+			if !(len(_Sender) > 0) {
 				errs[fmt.Sprintf("sender")] = append(errs[fmt.Sprintf("sender")], fmt.Sprintf("can not be empty"))
 			}
-			if !(len(sender) < 20) {
+			if !(len(_Sender) < 20) {
 				errs[fmt.Sprintf("sender")] = append(errs[fmt.Sprintf("sender")], fmt.Sprintf("len must be < 20"))
 			}
-			_ = sender
+			_ = _Sender
 		}
 	} else {
 		errs["sender"] = append(errs["sender"], fmt.Sprintf("required"))

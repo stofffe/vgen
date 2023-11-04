@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"unicode"
+	"regexp"
+	"strings"
 )
 
 // initialze pointer
@@ -39,11 +40,28 @@ func DebugPrintString(name string, val string) {
 	DebugPrintAny(name, unmarshalled)
 }
 
-func LowerFirstChar(str string) string {
-	if str == "" {
-		return str
+//
+// func LowerFirstChar(str string) string {
+// 	if str == "" {
+// 		return str
+// 	}
+// 	firstchar := []rune(str)[0]
+// 	firstchar = unicode.ToLower(firstchar)
+// 	return string(firstchar) + str[1:]
+// }
+
+func ExtractJsonName(tag, backup string) string {
+	reg := regexp.MustCompile(`json:".+\"`)
+	match := reg.FindString(tag)
+	match = strings.TrimPrefix(match, `json:"`)
+	match = strings.TrimSuffix(match, `"`)
+	match = strings.Split(match, ",")[0]
+	if match == "" {
+		return backup
 	}
-	firstchar := []rune(str)[0]
-	firstchar = unicode.ToLower(firstchar)
-	return string(firstchar) + str[1:]
+	return match
 }
+
+// func LowerFirstChar(str string) string {
+// 	return str + "_"
+// }

@@ -8,15 +8,15 @@ import (
 
 // vgen:[i]
 type Address struct {
-	Street string // vgen:[ req, not_empty ]
-	Number int    // vgen:[ req, lt=5 ]
+	Street string `json:"street"` // vgen:[ req, not_empty ]
+	Number int    `json:"number"` // vgen:[ req, lt=5 ]
 }
 
 // vgen:[i]
 type Person struct {
-	Name     string  // vgen:[ req, not_empty, len_lt=20 ]
-	Address1 Address // vgen:[ custom=abc ]
-	Address2 Address // vgen:[ i, req, custom=abc ]
+	Name     string  `json:"name"`     // vgen:[ req, not_empty, len_lt=20 ]
+	Address1 Address `json:"address1"` // vgen:[ custom=abc ]
+	Address2 Address `json:"address2"` // vgen:[ i, req, custom=abc ]
 }
 
 func abc(addr Address) error {

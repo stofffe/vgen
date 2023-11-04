@@ -11,6 +11,8 @@ import (
 	"github.com/stofffe/vgen/util"
 )
 
+const DEBUG = false
+
 type ParseInfo struct {
 	Package     string
 	StructTypes []StructType
@@ -23,19 +25,21 @@ type StructType struct {
 }
 
 func (f StructType) Name() string          { return f.name }
-func (f StructType) LowerName() string     { return util.LowerFirstChar(f.name) }
 func (f StructType) Fields() []StructField { return f.fields }
 
 type StructField struct {
 	name     string
+	alias    string
 	required bool
 	field    Field
+	tags     string
 }
 
-func (f StructField) Name() string      { return f.name }
-func (f StructField) LowerName() string { return util.LowerFirstChar(f.name) }
-func (f StructField) Field() Field      { return f.field }
-func (f StructField) Required() bool    { return f.required }
+func (f StructField) Name() string   { return f.name }
+func (f StructField) Alias() string  { return f.alias }
+func (f StructField) Field() Field   { return f.field }
+func (f StructField) Required() bool { return f.required }
+func (f StructField) Tags() string   { return f.tags }
 
 type Field interface {
 	Typ() string
@@ -76,14 +80,6 @@ func (f PrimField) Name() string { return f.name }
 func (f TypeField) Name() string { return f.name }
 func (f ListField) Name() string { return f.name }
 
-func (f PrimField) LowerName() string { return util.LowerFirstChar(f.name) }
-func (f TypeField) LowerName() string { return util.LowerFirstChar(f.name) }
-func (f ListField) LowerName() string { return util.LowerFirstChar(f.name) }
-
-// func (f PrimField) HasRules() bool { return len(f.rules.rules) > 0 }
-// func (f TypeField) HasRules() bool { return len(f.rules.rules) > 0 }
-// func (f ListField) HasRules() bool { return len(f.rules.rules) > 0 }
-
 func (f PrimField) Rules() []Rule { return f.rules }
 func (f TypeField) Rules() []Rule { return f.rules }
 func (f ListField) Rules() []Rule { return f.rules }
@@ -99,26 +95,19 @@ type Rules struct {
 	rules    [][]Rule
 }
 
-// func (r Rules) Name() string      { return r.name }
-// func (f Rules) LowerName() string { return util.LowerFirstChar(f.name) }
-// func (r Rules) Include() bool     { return r.include }
-// func (r Rules) Required() bool    { return r.required }
-// func (r Rules) Rules() []Rule {
-// 	return r.rules[r.depth]
-// }
-
 type Rule struct {
 	name  string
+	alias string
 	rule  string
 	param string
 	depth int
 }
 
-func (r Rule) Name() string      { return r.name }
-func (r Rule) LowerName() string { return util.LowerFirstChar(r.name) }
-func (r Rule) Param() string     { return r.param }
+func (r Rule) Name() string  { return r.name }
+func (r Rule) Alias() string { return r.alias }
+func (r Rule) Param() string { return r.param }
 func (r Rule) Path() string {
-	inner := r.LowerName()
+	inner := r.Alias()
 	args := ""
 	for i := 0; i < r.depth; i++ {
 		inner += "[%d]"
@@ -128,8 +117,6 @@ func (r Rule) Path() string {
 }
 
 // func (r Rule) Rule() string  { return r.rule }
-
-const DEBUG = false
 
 func parseFile(path string) (ParseInfo, error) {
 	// load file
@@ -249,12 +236,21 @@ func parseStructType(node *ast.StructType, name string) (StructType, error) {
 }
 
 func parseStructField(node *ast.Field) (StructField, error) {
-	name := node.Names[0].Name
+	// field tags
+	tags := ""
+	if node.Tag != nil {
+		tags = node.Tag.Value
+	}
 
+	// name and alias
+	name := node.Names[0].Name
+	alias := util.ExtractJsonName(tags, name)
+
+	// rules
 	var rules Rules
 	var err error
 	if node.Comment != nil {
-		rules, err = parseRules(node.Comment.Text(), name)
+		rules, err = parseRules(node.Comment.Text(), name, alias)
 		if err != nil {
 			return StructField{}, fmt.Errorf("could not parse rules on %v: %v", name, err)
 		}
@@ -268,8 +264,10 @@ func parseStructField(node *ast.Field) (StructField, error) {
 
 	return StructField{
 		name:     name,
+		alias:    util.ExtractJsonName(tags, name),
 		field:    field,
 		required: rules.required,
+		tags:     tags,
 	}, nil
 }
 

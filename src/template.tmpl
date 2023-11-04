@@ -12,19 +12,19 @@ import (
 {{ define "struct_type" }}
 type {{ .Name }}Vgen struct {
     {{- range .Fields }}
-        {{ .Name }} *{{ .Field.Typ -}}
+        {{ .Name }} *{{ .Field.Typ -}} {{ .Tags }}
     {{ end }}
 }
 {{ end }}
 
 {{ define "struct_validation" }}
 func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
-    {{ .LowerName }}, errs :=  t.InnerValidation()
+    _{{ .Name }}, errs :=  t.InnerValidation()
     if len(errs) > 0 {
         j, _ := json.Marshal(errs)
         return {{ .Name }}{}, fmt.Errorf("%s", j)
     }
-    return {{ .LowerName }}, nil
+    return _{{ .Name }}, nil
 }
 
 func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
@@ -32,15 +32,15 @@ func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
     errs := make(map[string][]string) 
 
     {{ range .Fields }}
-    if t.{{ .Name }} != nil {
+        if t.{{ .Name }} != nil {
 
-    {{ .LowerName }} := *t.{{ .Name }}
-    {
-        {{ .Field.Code }}
-    }       
-    } {{ if .Required }} else {
-        errs["{{ .LowerName }}"] = append(errs["{{ .LowerName }}"], fmt.Sprintf("required"))
-    } {{ end }}
+        _{{ .Name }} := *t.{{ .Name }}
+        {
+            {{ .Field.Code }}
+        }       
+        } {{ if .Required }} else {
+            errs["{{ .Alias }}"] = append(errs["{{ .Alias }}"], fmt.Sprintf("required"))
+        } {{ end }}
     {{ end }}
 
     if len(errs) > 0 {
@@ -57,14 +57,14 @@ func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
         {{ .Code }} 
     {{ end }}
 {{ end }}
- _ = {{ .LowerName }}
+ _ = _{{ .Name }}
 {{ end }}
 
 {{ define "list-field-validation"}}
 {{ range .Rules }}
     {{ .Code }} 
 {{ end }}
-for i{{ .Depth }}, {{ .LowerName }} := range {{ .LowerName }} {
+for i{{ .Depth }}, _{{ .Name }} := range _{{ .Name }} {
     {{ .Inner.Code }}
     _ = i{{ .Depth }}
 }
