@@ -17,6 +17,9 @@ type {{ .Name }}Vgen struct {
 }
 {{ end }}
 
+{{ define "struct-convert" }}
+
+{{ end }}
 
 {{ define "json-decoding" }} 
 func {{ .Name }}FromJson(bytes []byte) ({{ .Name }}, error) {
@@ -54,6 +57,7 @@ func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
         if t.{{ .Name }} != nil {
 
         _{{ .Name }} := *t.{{ .Name }}
+        res.{{ .Name }} = _{{ .Name }}
         {
             {{ .Field.Code }}
         }       
