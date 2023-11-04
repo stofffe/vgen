@@ -9,7 +9,7 @@ import (
 )
 {{ end }}
 
-{{ define "struct_type" }}
+{{ define "struct-type" }}
 type {{ .Name }}Vgen struct {
     {{- range .Fields }}
         {{ .Name }} *{{ .Field.Typ -}} {{ .Tags }}
@@ -17,7 +17,26 @@ type {{ .Name }}Vgen struct {
 }
 {{ end }}
 
-{{ define "struct_validation" }}
+
+{{ define "json-decoding" }} 
+func {{ .Name }}FromJson(bytes []byte) ({{ .Name }}, error) {
+    var v {{ .Name }}Vgen
+
+    err := json.Unmarshal(bytes, &v)
+    if err != nil {
+        return {{ .Name }}{}, err
+    }
+
+    r, err := v.Validate()
+    if err != nil {
+        return {{ .Name }}{}, err
+    }
+
+    return r, nil
+}
+{{ end }}
+
+{{ define "struct-validation" }}
 func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
     _{{ .Name }}, errs :=  t.InnerValidation()
     if len(errs) > 0 {

@@ -68,3 +68,15 @@ func (t EmailVgen) InnerValidation() (Email, map[string][]string) {
 	}
 	return res, nil
 }
+func (t Email) FromJson(bytes []byte) (Email, error) {
+	var v EmailVgen
+	err := json.Unmarshal(bytes, &v)
+	if err != nil {
+		return Email{}, err
+	}
+	r, err := v.Validate()
+	if err != nil {
+		return Email{}, err
+	}
+	return r, nil
+}

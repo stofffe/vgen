@@ -59,3 +59,15 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 	}
 	return res, nil
 }
+func PersonFromJson(bytes []byte) (Person, error) {
+	var v PersonVgen
+	err := json.Unmarshal(bytes, &v)
+	if err != nil {
+		return Person{}, err
+	}
+	r, err := v.Validate()
+	if err != nil {
+		return Person{}, err
+	}
+	return r, nil
+}

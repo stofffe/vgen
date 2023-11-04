@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/stofffe/vgen/util"
 )
@@ -23,13 +21,7 @@ func main() {
 			"age": 8
 		}
 	`
-
-	var personVgen PersonVgen
-	err := json.Unmarshal([]byte(body), &personVgen)
-	if err != nil {
-		log.Fatal(err)
-	}
-	person, err := personVgen.Validate()
+	person, err := PersonFromJson([]byte(body))
 	if err != nil {
 		util.DebugPrintString("err", err.Error())
 	} else {

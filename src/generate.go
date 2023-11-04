@@ -29,16 +29,23 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	// structs
 	for _, struct_type := range info.StructTypes {
 		// type
-		err := tmpl.ExecuteTemplate(&buffer, "struct_type", struct_type)
+		err := tmpl.ExecuteTemplate(&buffer, "struct-type", struct_type)
 		if err != nil {
-			return []byte{}, fmt.Errorf("could not execute struct_type template: %v", err)
+			return []byte{}, fmt.Errorf("could not execute struct-type template: %v", err)
 		}
 
 		// validation
-		err = tmpl.ExecuteTemplate(&buffer, "struct_validation", struct_type)
+		err = tmpl.ExecuteTemplate(&buffer, "struct-validation", struct_type)
 		if err != nil {
-			return []byte{}, fmt.Errorf("could not execute struct_validation: %v", err)
+			return []byte{}, fmt.Errorf("could not execute struct-validation: %v", err)
 		}
+
+		// json decoding
+		err = tmpl.ExecuteTemplate(&buffer, "json-decoding", struct_type)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not execute json-decoding: %v", err)
+		}
+
 	}
 
 	// debug
