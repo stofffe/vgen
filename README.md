@@ -9,9 +9,9 @@ I was playing around with a web server and had to validate the incomming json re
 ```go
 // vgen:[i]
 type Email struct {
-	Title  string // vgen:[ req, not_empty, len_lt=10 ]
-	Text   string // vgen:[ req, not_empty, len_lt=200 ]
-	Sender string // vgen:[ req, not_empty, len_lt=20 ]
+	Title  string `json:"title"` // vgen:[ req, not_empty, len_lt=10 ]
+	Text   string `json:"text"` // vgen:[ req, not_empty, len_lt=200 ]
+	Sender string `json:"sender"` // vgen:[ req, not_empty, len_lt=20 ]
 }
 ```
 Running the tool on the following type would generate a new type and method 
@@ -22,6 +22,7 @@ type EmailVgen struct {
     Sender *string
 }
 func (t EmailVgen) Validate() (Email, error) { ... }
+func EmailFromJson(bytes []byte) (Email, error) { ... }
 ```
 This would be the response for an example json request
 ```
@@ -41,8 +42,15 @@ This would be the response for an example json request
     "required"
   ]
 }
-
 ```
+
+### Supported feautures
+* Validating
+  * Primitive fields (string, int, bool)
+  * Nested types 
+  * List
+* Json decoding
+
 
 ### More examples
 For more advanced examples look in the [examples folder](examples)

@@ -14,13 +14,13 @@ type Email struct {
 }
 
 func main() {
-	person, err := EmailVgen{
+	email, err := EmailVgen{
 		Text:   util.InitP("hello"),
 		Sender: util.InitP(""),
 	}.Validate()
 	if err != nil {
 		util.DebugPrintString("err", err.Error())
 	} else {
-		fmt.Printf("person: %v\n", person)
+		fmt.Printf("person: %v\n", email)
 	}
 }
