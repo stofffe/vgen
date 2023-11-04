@@ -9,7 +9,8 @@ import (
 )
 
 // initialze pointer
-// useful when creating pointers with value
+//
+// useful when creating pointers with inital value
 func InitP[T any](t T) *T {
 	return &t
 }
@@ -40,18 +41,10 @@ func DebugPrintString(name string, val string) {
 	DebugPrintAny(name, unmarshalled)
 }
 
-//
-// func LowerFirstChar(str string) string {
-// 	if str == "" {
-// 		return str
-// 	}
-// 	firstchar := []rune(str)[0]
-// 	firstchar = unicode.ToLower(firstchar)
-// 	return string(firstchar) + str[1:]
-// }
+// TODO does not work with multiple tags
 
 func ExtractJsonName(tag, backup string) string {
-	reg := regexp.MustCompile(`json:".+\"`)
+	reg := regexp.MustCompile(`json:"[^"]*"`)
 	match := reg.FindString(tag)
 	match = strings.TrimPrefix(match, `json:"`)
 	match = strings.TrimSuffix(match, `"`)
@@ -63,5 +56,10 @@ func ExtractJsonName(tag, backup string) string {
 }
 
 // func LowerFirstChar(str string) string {
-// 	return str + "_"
+// 	if str == "" {
+// 		return str
+// 	}
+// 	firstchar := []rune(str)[0]
+// 	firstchar = unicode.ToLower(firstchar)
+// 	return string(firstchar) + str[1:]
 // }
