@@ -10,15 +10,14 @@ type PersonVgen struct {
 	A *[][]string `json:"a"`
 }
 func (t PersonVgen) Validate() (Person, error) {
-	_Person, errs := t.InnerValidation()
+	errs := t.InnerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Person{}, fmt.Errorf("%s", j)
 	}
-	return _Person, nil
+	return t.Convert(), nil
 }
-func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
-	res := Person{}
+func (t PersonVgen) InnerValidation() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Nicknames != nil {
 		_Nicknames := *t.Nicknames
@@ -30,7 +29,6 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 				if !(len(_Nicknames) > 0) {
 					errs[fmt.Sprintf("nicknames[%d]", i0)] = append(errs[fmt.Sprintf("nicknames[%d]", i0)], fmt.Sprintf("can not be empty"))
 				}
-				_ = _Nicknames
 				_ = i0
 			}
 		}
@@ -52,15 +50,44 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 					if !(len(_A) > 0) {
 						errs[fmt.Sprintf("a[%d][%d]", i0, i1)] = append(errs[fmt.Sprintf("a[%d][%d]", i0, i1)], fmt.Sprintf("can not be empty"))
 					}
-					_ = _A
 					_ = i1
 				}
 				_ = i0
 			}
 		}
 	}
-	if len(errs) > 0 {
-		return Person{}, errs
+	return errs
+}
+func (t PersonVgen) Convert() Person {
+	var res Person
+	if t.Nicknames != nil {
+		_Nicknames := *t.Nicknames
+		res.Nicknames = make([]string, len(_Nicknames))
+		for i0, _Nicknames := range _Nicknames {
+			res.Nicknames[i0] = _Nicknames
+		}
 	}
-	return res, nil
+	if t.A != nil {
+		_A := *t.A
+		res.A = make([][]string, len(_A))
+		for i0, _A := range _A {
+			res.A[i0] = make([]string, len(_A))
+			for i1, _A := range _A {
+				res.A[i0][i1] = _A
+			}
+		}
+	}
+	return res
+}
+func PersonFromJson(bytes []byte) (Person, error) {
+	var v PersonVgen
+	err := json.Unmarshal(bytes, &v)
+	if err != nil {
+		return Person{}, err
+	}
+	r, err := v.Validate()
+	if err != nil {
+		return Person{}, err
+	}
+	return r, nil
 }

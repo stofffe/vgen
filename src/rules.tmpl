@@ -2,13 +2,13 @@
 {{ end }}
 
 {{ define "i" }}
-_{{ .Name }}, struct_errs := _{{ .Name }}.InnerValidation()
+struct_errs := _{{ .Name }}.InnerValidation()
 for path, err_list := range struct_errs {
     for _, err := range err_list {
         errs[{{ .Path }} + "." + path] = append(errs[{{ .Path }} + "." + path], err) 
     }    
 }
-_ = _{{ .Name }}
+_{{ .Name}} := _{{ .Name }}.Convert()
 {{ end }}
 
 {{ define "not_empty" }}

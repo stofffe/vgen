@@ -10,15 +10,14 @@ type AddressVgen struct {
 	Number *int `json:"number"`
 }
 func (t AddressVgen) Validate() (Address, error) {
-	_Address, errs := t.InnerValidation()
+	errs := t.InnerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Address{}, fmt.Errorf("%s", j)
 	}
-	return _Address, nil
+	return t.Convert(), nil
 }
-func (t AddressVgen) InnerValidation() (Address, map[string][]string) {
-	res := Address{}
+func (t AddressVgen) InnerValidation() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Street != nil {
 		_Street := *t.Street
@@ -26,7 +25,6 @@ func (t AddressVgen) InnerValidation() (Address, map[string][]string) {
 			if !(len(_Street) > 0) {
 				errs[fmt.Sprintf("street")] = append(errs[fmt.Sprintf("street")], fmt.Sprintf("can not be empty"))
 			}
-			_ = _Street
 		}
 	} else {
 		errs["street"] = append(errs["street"], fmt.Sprintf("required"))
@@ -37,15 +35,35 @@ func (t AddressVgen) InnerValidation() (Address, map[string][]string) {
 			if !(_Number < 5) {
 				errs[fmt.Sprintf("number")] = append(errs[fmt.Sprintf("number")], fmt.Sprintf("must be < 5"))
 			}
-			_ = _Number
 		}
 	} else {
 		errs["number"] = append(errs["number"], fmt.Sprintf("required"))
 	}
-	if len(errs) > 0 {
-		return Address{}, errs
+	return errs
+}
+func (t AddressVgen) Convert() Address {
+	var res Address
+	if t.Street != nil {
+		_Street := *t.Street
+		res.Street = _Street
 	}
-	return res, nil
+	if t.Number != nil {
+		_Number := *t.Number
+		res.Number = _Number
+	}
+	return res
+}
+func AddressFromJson(bytes []byte) (Address, error) {
+	var v AddressVgen
+	err := json.Unmarshal(bytes, &v)
+	if err != nil {
+		return Address{}, err
+	}
+	r, err := v.Validate()
+	if err != nil {
+		return Address{}, err
+	}
+	return r, nil
 }
 type PersonVgen struct {
 	Name *string `json:"name"`
@@ -55,15 +73,14 @@ type PersonVgen struct {
 	Addresses2 *[][]AddressVgen `json:"addresses2"`
 }
 func (t PersonVgen) Validate() (Person, error) {
-	_Person, errs := t.InnerValidation()
+	errs := t.InnerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Person{}, fmt.Errorf("%s", j)
 	}
-	return _Person, nil
+	return t.Convert(), nil
 }
-func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
-	res := Person{}
+func (t PersonVgen) InnerValidation() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Name != nil {
 		_Name := *t.Name
@@ -74,7 +91,6 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 			if !(len(_Name) < 20) {
 				errs[fmt.Sprintf("name")] = append(errs[fmt.Sprintf("name")], fmt.Sprintf("len must be < 20"))
 			}
-			_ = _Name
 		}
 	} else {
 		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
@@ -85,22 +101,22 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 			if err := valAddr(_Address1); err != nil {
 				errs[fmt.Sprintf("address1")] = append(errs[fmt.Sprintf("address1")], err.Error())
 			}
-			_ = _Address1
 		}
 	}
 	if t.Address2 != nil {
 		_Address2 := *t.Address2
 		{
-			_Address2, struct_errs := _Address2.InnerValidation()
+			struct_errs := _Address2.InnerValidation()
 			for path, err_list := range struct_errs {
 				for _, err := range err_list {
 					errs[fmt.Sprintf("address2")+"."+path] = append(errs[fmt.Sprintf("address2")+"."+path], err)
 				}
 			}
-			_ = _Address2
+			_Address2 := _Address2.Convert()
 			if err := valAddr(_Address2); err != nil {
 				errs[fmt.Sprintf("address2")] = append(errs[fmt.Sprintf("address2")], err.Error())
 			}
+			_ = _Address2
 		}
 	} else {
 		errs["address2"] = append(errs["address2"], fmt.Sprintf("required"))
@@ -109,12 +125,13 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 		_Addresses := *t.Addresses
 		{
 			for i0, _Addresses := range _Addresses {
-				_Addresses, struct_errs := _Addresses.InnerValidation()
+				struct_errs := _Addresses.InnerValidation()
 				for path, err_list := range struct_errs {
 					for _, err := range err_list {
 						errs[fmt.Sprintf("addresses[%d]", i0)+"."+path] = append(errs[fmt.Sprintf("addresses[%d]", i0)+"."+path], err)
 					}
 				}
+				_Addresses := _Addresses.Convert()
 				_ = _Addresses
 				_ = i0
 			}
@@ -127,12 +144,13 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 		{
 			for i0, _Addresses2 := range _Addresses2 {
 				for i1, _Addresses2 := range _Addresses2 {
-					_Addresses2, struct_errs := _Addresses2.InnerValidation()
+					struct_errs := _Addresses2.InnerValidation()
 					for path, err_list := range struct_errs {
 						for _, err := range err_list {
 							errs[fmt.Sprintf("addresses2[%d][%d]", i0, i1)+"."+path] = append(errs[fmt.Sprintf("addresses2[%d][%d]", i0, i1)+"."+path], err)
 						}
 					}
+					_Addresses2 := _Addresses2.Convert()
 					_ = _Addresses2
 					_ = i1
 				}
@@ -142,8 +160,50 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 	} else {
 		errs["addresses2"] = append(errs["addresses2"], fmt.Sprintf("required"))
 	}
-	if len(errs) > 0 {
-		return Person{}, errs
+	return errs
+}
+func (t PersonVgen) Convert() Person {
+	var res Person
+	if t.Name != nil {
+		_Name := *t.Name
+		res.Name = _Name
 	}
-	return res, nil
+	if t.Address1 != nil {
+		_Address1 := *t.Address1
+		res.Address1 = _Address1
+	}
+	if t.Address2 != nil {
+		_Address2 := *t.Address2
+		res.Address2 = _Address2.Convert()
+	}
+	if t.Addresses != nil {
+		_Addresses := *t.Addresses
+		res.Addresses = make([]Address, len(_Addresses))
+		for i0, _Addresses := range _Addresses {
+			res.Addresses[i0] = _Addresses.Convert()
+		}
+	}
+	if t.Addresses2 != nil {
+		_Addresses2 := *t.Addresses2
+		res.Addresses2 = make([][]Address, len(_Addresses2))
+		for i0, _Addresses2 := range _Addresses2 {
+			res.Addresses2[i0] = make([]Address, len(_Addresses2))
+			for i1, _Addresses2 := range _Addresses2 {
+				res.Addresses2[i0][i1] = _Addresses2.Convert()
+			}
+		}
+	}
+	return res
+}
+func PersonFromJson(bytes []byte) (Person, error) {
+	var v PersonVgen
+	err := json.Unmarshal(bytes, &v)
+	if err != nil {
+		return Person{}, err
+	}
+	r, err := v.Validate()
+	if err != nil {
+		return Person{}, err
+	}
+	return r, nil
 }

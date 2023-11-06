@@ -13,6 +13,11 @@ type Email struct {
 	Text   string `json:"text"` // vgen:[ req, not_empty, len_lt=200 ]
 	Sender string `json:"sender"` // vgen:[ req, not_empty, len_lt=20 ]
 }
+type Email struct {
+	Title  string `json:"title" vgen:"[ req, not_empty, len_lt=10 ]"`
+	Text   string `json:"text" vgen:"[ req, not_empty, len_lt=200 ]"`
+	Sender string `json:"sender" vgen:[ req, not_empty, len_lt=20 ]"`
+}
 ```
 Running the tool on the following type would generate a new type and method 
 ```go

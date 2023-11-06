@@ -42,8 +42,10 @@ func (f StructField) Required() bool { return f.required }
 func (f StructField) Tags() string   { return f.tags }
 
 type Field interface {
-	Typ() string
-	Code() (string, error)
+	ValidationTyp() string
+	ValidationCode() (string, error)
+	ConvertTyp() string
+	ConvertCode() (string, error)
 }
 
 type PrimField struct {
@@ -72,9 +74,36 @@ type TypeField struct {
 	rules []Rule
 }
 
-func (f PrimField) Typ() string { return f.typ }
-func (f TypeField) Typ() string { return f.typ + "Vgen" }
-func (f ListField) Typ() string { return "[]" + f.inner.Typ() }
+func (f PrimField) ValidationTyp() string { return f.typ }
+func (f TypeField) ValidationTyp() string { return f.typ + "Vgen" }
+func (f ListField) ValidationTyp() string { return "[]" + f.inner.ValidationTyp() }
+
+func (f PrimField) ConvertTyp() string { return f.typ }
+func (f TypeField) ConvertTyp() string { return f.typ }
+func (f ListField) ConvertTyp() string { return "[]" + f.inner.ConvertTyp() }
+
+func (f ListField) Test3() string {
+	if _, ok := f.inner.(TypeField); ok {
+		return ".Convert()"
+	}
+	return ""
+}
+
+// TODO clean up
+func (f ListField) Test1() string {
+	res := ""
+	for i := 0; i < f.depth+1; i++ {
+		res += fmt.Sprintf("[i%d]", i)
+	}
+	return res
+}
+func (f ListField) Test2() string {
+	res := ""
+	for i := 0; i < f.depth; i++ {
+		res += fmt.Sprintf("[i%d]", i)
+	}
+	return res
+}
 
 func (f PrimField) Name() string { return f.name }
 func (f TypeField) Name() string { return f.name }
@@ -309,7 +338,8 @@ func parseField(node ast.Expr, name string, include bool, rules [][]Rule, depth 
 }
 
 func extract(comment string) string {
-	reg := regexp.MustCompile(`vgen:\[.+\]`)
+	// reg := regexp.MustCompile(`vgen:\[.+\]`)
+	reg := regexp.MustCompile(`vgen:\[[^\]]+\]`)
 	match := reg.FindString(comment)
 	match = strings.TrimPrefix(match, "vgen:[")
 	match = strings.TrimSuffix(match, "]")

@@ -49,3 +49,11 @@ run_json:
 all_json:
 	@make compile_json
 	@make run_json
+
+compile_type_list:
+	@make build && ./bin/vgen examples/type_list/type_list.go
+run_type_list:
+	@go run examples/type_list/*.go
+all_type_list:
+	@make compile_type_list
+	@make run_type_list

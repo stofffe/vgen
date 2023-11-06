@@ -11,15 +11,14 @@ type EmailVgen struct {
 	Sender *string `json:"sender"`
 }
 func (t EmailVgen) Validate() (Email, error) {
-	_Email, errs := t.InnerValidation()
+	errs := t.InnerValidation()
 	if len(errs) > 0 {
 		j, _ := json.Marshal(errs)
 		return Email{}, fmt.Errorf("%s", j)
 	}
-	return _Email, nil
+	return Email{}, nil
 }
-func (t EmailVgen) InnerValidation() (Email, map[string][]string) {
-	res := Email{}
+func (t EmailVgen) InnerValidation() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Title != nil {
 		_Title := *t.Title
@@ -63,12 +62,25 @@ func (t EmailVgen) InnerValidation() (Email, map[string][]string) {
 	} else {
 		errs["sender"] = append(errs["sender"], fmt.Sprintf("required"))
 	}
-	if len(errs) > 0 {
-		return Email{}, errs
-	}
-	return res, nil
+	return errs
 }
-func (t Email) FromJson(bytes []byte) (Email, error) {
+func (t EmailVgen) Convert() Email {
+	var res Email
+	if t.Title != nil {
+		_Title := *t.Title
+		res.Title = _Title
+	}
+	if t.Text != nil {
+		_Text := *t.Text
+		res.Text = _Text
+	}
+	if t.Sender != nil {
+		_Sender := *t.Sender
+		res.Sender = _Sender
+	}
+	return Email{}
+}
+func EmailFromJson(bytes []byte) (Email, error) {
 	var v EmailVgen
 	err := json.Unmarshal(bytes, &v)
 	if err != nil {

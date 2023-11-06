@@ -40,6 +40,12 @@ func generateFile(info ParseInfo) ([]byte, error) {
 			return []byte{}, fmt.Errorf("could not execute struct-validation: %v", err)
 		}
 
+		// conversion
+		err = tmpl.ExecuteTemplate(&buffer, "struct-convert", struct_type)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not execute struct-convert: %v", err)
+		}
+
 		// json decoding
 		err = tmpl.ExecuteTemplate(&buffer, "json-decoding", struct_type)
 		if err != nil {
@@ -49,6 +55,7 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	}
 
 	// debug
+	// return buffer.Bytes(), nil
 	if DEBUG {
 		return buffer.Bytes(), nil
 	}
@@ -76,16 +83,28 @@ func templateToString(name string, data any) (string, error) {
 	return buffer.String(), nil
 }
 
-func (f PrimField) Code() (string, error) {
-
+func (f PrimField) ValidationCode() (string, error) {
 	return templateToString("prim-field-validation", f)
 }
-func (f TypeField) Code() (string, error) {
+func (f TypeField) ValidationCode() (string, error) {
 	return templateToString("type-field-validation", f)
 }
-func (f ListField) Code() (string, error) {
+func (f ListField) ValidationCode() (string, error) {
 	return templateToString("list-field-validation", f)
 }
 func (r Rule) Code() (string, error) {
 	return templateToString(r.rule, r)
+}
+
+func (f PrimField) ConvertCode() (string, error) {
+	return templateToString("prim-field-convert", f)
+}
+func (f TypeField) ConvertCode() (string, error) {
+	return templateToString("type-field-convert", f)
+}
+func (f ListField) ConvertCode() (string, error) {
+	if _, ok := f.inner.(ListField); ok {
+		return templateToString("list-field-convert-outer", f)
+	}
+	return templateToString("list-field-convert-inner", f)
 }

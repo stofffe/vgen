@@ -12,13 +12,100 @@ import (
 {{ define "struct-type" }}
 type {{ .Name }}Vgen struct {
     {{- range .Fields }}
-        {{ .Name }} *{{ .Field.Typ -}} {{ .Tags }}
+        {{ .Name }} *{{ .Field.ValidationTyp -}} {{ .Tags }}
     {{ end }}
 }
 {{ end }}
 
-{{ define "struct-convert" }}
+{{ define "struct-validation" }}
+func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
+    errs :=  t.InnerValidation()
+    if len(errs) > 0 {
+        j, _ := json.Marshal(errs)
+        return {{ .Name }}{}, fmt.Errorf("%s", j)
+    }
+    return t.Convert(), nil
+}
 
+func (t {{ .Name }}Vgen) InnerValidation() map[string][]string {
+    errs := make(map[string][]string) 
+
+    {{ range .Fields }}
+        if t.{{ .Name }} != nil {
+
+        _{{ .Name }} := *t.{{ .Name }}
+        {
+            {{ .Field.ValidationCode }}
+        }       
+        } {{ if .Required }} else {
+            errs["{{ .Alias }}"] = append(errs["{{ .Alias }}"], fmt.Sprintf("required"))
+        } {{ end }}
+    {{ end }}
+
+    return errs
+}
+{{ end }}
+
+{{ define "prim-field-validation"}}
+{{ range .Rules }}
+    {{ .Code }} 
+{{ else }}
+    _ = _{{ .Name }}
+{{ end }}
+{{ end }} 
+
+{{ define "list-field-validation"}}
+{{ range .Rules }}
+    {{ .Code }} 
+{{ end }}
+for i{{ .Depth }}, _{{ .Name }} := range _{{ .Name }} {
+    {{ .Inner.ValidationCode }}
+    _ = i{{ .Depth }}
+}
+{{ end }}
+
+{{ define "type-field-validation"}}
+{{ if .Rules }}
+    {{ range .Rules }}
+        {{ .Code }} 
+    {{ end }}
+{{ end }}
+_ = _{{ .Name }}
+{{ end }}
+
+{{ define "struct-convert" }}
+func (t {{ .Name }}Vgen) Convert() {{ .Name }} {
+    var res {{ .Name }}
+    {{ range .Fields }}
+        if t.{{ .Name }} != nil {
+            _{{ .Name }} := *t.{{ .Name }}
+            {{ .Field.ConvertCode }}
+        }
+    {{ end }}
+    return res
+}
+{{ end }}
+
+{{ define "prim-field-convert" }} 
+    res.{{ .Name }} = _{{ .Name }}
+{{ end }}
+
+{{ define "type-field-convert" }} 
+    res.{{ .Name }} = _{{ .Name }}.Convert()
+{{ end }}
+
+{{ define "list-field-convert-outer" }} 
+    res.{{ .Name }}{{ .Test2 }} = make({{ .ConvertTyp }}, len(_{{ .Name }}))
+    for i{{ .Depth }}, _{{ .Name }} := range _{{ .Name }} {
+        {{ .Inner.ConvertCode }} 
+    }
+{{ end }}
+
+{{ define "list-field-convert-inner" }} 
+    res.{{ .Name }}{{ .Test2 }} = make({{ .ConvertTyp }}, len(_{{ .Name }}))
+    for i{{ .Depth }}, _{{ .Name }} := range _{{ .Name }} {
+        res.{{ .Name }}{{ .Test1 }} = _{{ .Name }}{{ .Test3 }}
+    }
 {{ end }}
 
 {{ define "json-decoding" }} 
@@ -37,66 +124,4 @@ func {{ .Name }}FromJson(bytes []byte) ({{ .Name }}, error) {
 
     return r, nil
 }
-{{ end }}
-
-{{ define "struct-validation" }}
-func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
-    _{{ .Name }}, errs :=  t.InnerValidation()
-    if len(errs) > 0 {
-        j, _ := json.Marshal(errs)
-        return {{ .Name }}{}, fmt.Errorf("%s", j)
-    }
-    return _{{ .Name }}, nil
-}
-
-func (t {{ .Name }}Vgen) InnerValidation() ({{ .Name }}, map[string][]string) {
-    res := {{ .Name }}{}
-    errs := make(map[string][]string) 
-
-    {{ range .Fields }}
-        if t.{{ .Name }} != nil {
-
-        _{{ .Name }} := *t.{{ .Name }}
-        res.{{ .Name }} = _{{ .Name }}
-        {
-            {{ .Field.Code }}
-        }       
-        } {{ if .Required }} else {
-            errs["{{ .Alias }}"] = append(errs["{{ .Alias }}"], fmt.Sprintf("required"))
-        } {{ end }}
-    {{ end }}
-
-    if len(errs) > 0 {
-        return {{ .Name }}{}, errs
-    }
-
-    return res, nil
-}
-{{ end }}
-
-{{ define "prim-field-validation"}}
-{{ if .Rules }}
-    {{ range .Rules }}
-        {{ .Code }} 
-    {{ end }}
-{{ end }}
- _ = _{{ .Name }}
-{{ end }}
-
-{{ define "list-field-validation"}}
-{{ range .Rules }}
-    {{ .Code }} 
-{{ end }}
-for i{{ .Depth }}, _{{ .Name }} := range _{{ .Name }} {
-    {{ .Inner.Code }}
-    _ = i{{ .Depth }}
-}
-{{ end }}
-
-{{ define "type-field-validation"}}
-{{ if .Rules }}
-    {{ range .Rules }}
-        {{ .Code }} 
-    {{ end }}
-{{ end }}
 {{ end }}
