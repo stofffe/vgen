@@ -2,22 +2,20 @@
 // DO NOT EDIT
 package main
 import (
-	"encoding/json"
 	"fmt"
 )
 type AddressVgen struct {
 	Street *string `json:"street"`
 	Number *int `json:"number"`
 }
-func (t AddressVgen) Validate() (Address, error) {
-	errs := t.InnerValidation()
+func (t AddressVgen) ValidatedConvert() (Address, map[string][]string) {
+	errs := t.Validate()
 	if len(errs) > 0 {
-		j, _ := json.Marshal(errs)
-		return Address{}, fmt.Errorf("%s", j)
+		return Address{}, errs
 	}
 	return t.Convert(), nil
 }
-func (t AddressVgen) InnerValidation() map[string][]string {
+func (t AddressVgen) Validate() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Street != nil {
 		_Street := *t.Street
@@ -53,18 +51,6 @@ func (t AddressVgen) Convert() Address {
 	}
 	return res
 }
-func AddressFromJson(bytes []byte) (Address, error) {
-	var v AddressVgen
-	err := json.Unmarshal(bytes, &v)
-	if err != nil {
-		return Address{}, err
-	}
-	r, err := v.Validate()
-	if err != nil {
-		return Address{}, err
-	}
-	return r, nil
-}
 type PersonVgen struct {
 	Name *string `json:"name"`
 	Address1 *Address `json:"address1"`
@@ -72,15 +58,14 @@ type PersonVgen struct {
 	Addresses *[]AddressVgen `json:"addresses"`
 	Addresses2 *[][]AddressVgen `json:"addresses2"`
 }
-func (t PersonVgen) Validate() (Person, error) {
-	errs := t.InnerValidation()
+func (t PersonVgen) ValidatedConvert() (Person, map[string][]string) {
+	errs := t.Validate()
 	if len(errs) > 0 {
-		j, _ := json.Marshal(errs)
-		return Person{}, fmt.Errorf("%s", j)
+		return Person{}, errs
 	}
 	return t.Convert(), nil
 }
-func (t PersonVgen) InnerValidation() map[string][]string {
+func (t PersonVgen) Validate() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Name != nil {
 		_Name := *t.Name
@@ -106,7 +91,7 @@ func (t PersonVgen) InnerValidation() map[string][]string {
 	if t.Address2 != nil {
 		_Address2 := *t.Address2
 		{
-			struct_errs := _Address2.InnerValidation()
+			struct_errs := _Address2.Validate()
 			for path, err_list := range struct_errs {
 				for _, err := range err_list {
 					errs[fmt.Sprintf("address2")+"."+path] = append(errs[fmt.Sprintf("address2")+"."+path], err)
@@ -125,7 +110,7 @@ func (t PersonVgen) InnerValidation() map[string][]string {
 		_Addresses := *t.Addresses
 		{
 			for i0, _Addresses := range _Addresses {
-				struct_errs := _Addresses.InnerValidation()
+				struct_errs := _Addresses.Validate()
 				for path, err_list := range struct_errs {
 					for _, err := range err_list {
 						errs[fmt.Sprintf("addresses[%d]", i0)+"."+path] = append(errs[fmt.Sprintf("addresses[%d]", i0)+"."+path], err)
@@ -144,7 +129,7 @@ func (t PersonVgen) InnerValidation() map[string][]string {
 		{
 			for i0, _Addresses2 := range _Addresses2 {
 				for i1, _Addresses2 := range _Addresses2 {
-					struct_errs := _Addresses2.InnerValidation()
+					struct_errs := _Addresses2.Validate()
 					for path, err_list := range struct_errs {
 						for _, err := range err_list {
 							errs[fmt.Sprintf("addresses2[%d][%d]", i0, i1)+"."+path] = append(errs[fmt.Sprintf("addresses2[%d][%d]", i0, i1)+"."+path], err)
@@ -194,16 +179,4 @@ func (t PersonVgen) Convert() Person {
 		}
 	}
 	return res
-}
-func PersonFromJson(bytes []byte) (Person, error) {
-	var v PersonVgen
-	err := json.Unmarshal(bytes, &v)
-	if err != nil {
-		return Person{}, err
-	}
-	r, err := v.Validate()
-	if err != nil {
-		return Person{}, err
-	}
-	return r, nil
 }

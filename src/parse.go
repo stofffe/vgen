@@ -195,7 +195,8 @@ func parseFile(path string) (ParseInfo, error) {
 	return ParseInfo{
 		Package:     package_name,
 		StructTypes: types,
-		Imports:     []string{"encoding/json", "fmt"},
+		// Imports:     []string{"encoding/json", "fmt"},
+		Imports: []string{"fmt"},
 	}, nil
 
 }

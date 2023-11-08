@@ -23,9 +23,9 @@ func main() {
 	person, err := PersonVgen{
 		Nicknames: util.InitP([]string{"hello", "", "abc", "noooooooooooooooooo"}),
 		A:         util.InitP([][]string{{"abc"}, {"bob", "yo"}, {"bob", ""}}),
-	}.Validate()
+	}.ValidatedConvert()
 	if err != nil {
-		util.DebugPrintString("err", err.Error())
+		util.DebugPrintAny("err", err)
 	} else {
 		fmt.Printf("person: %v\n", person)
 	}

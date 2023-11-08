@@ -47,10 +47,10 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		}
 
 		// json decoding
-		err = tmpl.ExecuteTemplate(&buffer, "json-decoding", struct_type)
-		if err != nil {
-			return []byte{}, fmt.Errorf("could not execute json-decoding: %v", err)
-		}
+		// err = tmpl.ExecuteTemplate(&buffer, "json-decoding", struct_type)
+		// if err != nil {
+		// 	return []byte{}, fmt.Errorf("could not execute json-decoding: %v", err)
+		// }
 
 	}
 

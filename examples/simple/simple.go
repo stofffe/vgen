@@ -17,9 +17,9 @@ func main() {
 	email, err := EmailVgen{
 		Text:   util.InitP("hello"),
 		Sender: util.InitP(""),
-	}.Validate()
+	}.ValidatedConvert()
 	if err != nil {
-		util.DebugPrintString("err", err.Error())
+		util.DebugPrintAny("err", err)
 	} else {
 		fmt.Printf("person: %v\n", email)
 	}

@@ -2,7 +2,6 @@
 // DO NOT EDIT
 package main
 import (
-	"encoding/json"
 	"fmt"
 )
 type PersonVgen struct {
@@ -10,16 +9,14 @@ type PersonVgen struct {
 	Nickname *string `json:"nickname"`
 	Age *int `json:"age"`
 }
-func (t PersonVgen) Validate() (Person, error) {
-	_Person, errs := t.InnerValidation()
+func (t PersonVgen) ValidatedConvert() (Person, *map[string][]string) {
+	errs := t.Validate()
 	if len(errs) > 0 {
-		j, _ := json.Marshal(errs)
-		return Person{}, fmt.Errorf("%s", j)
+		return Person{}, &errs
 	}
-	return _Person, nil
+	return t.Convert(), nil
 }
-func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
-	res := Person{}
+func (t PersonVgen) Validate() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Name != nil {
 		_Name := *t.Name
@@ -30,7 +27,6 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 			if !(len(_Name) < 10) {
 				errs[fmt.Sprintf("name")] = append(errs[fmt.Sprintf("name")], fmt.Sprintf("len must be < 10"))
 			}
-			_ = _Name
 		}
 	} else {
 		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
@@ -49,25 +45,25 @@ func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
 			if !(_Age > 10) {
 				errs[fmt.Sprintf("age")] = append(errs[fmt.Sprintf("age")], fmt.Sprintf("must be > 10"))
 			}
-			_ = _Age
 		}
 	} else {
 		errs["age"] = append(errs["age"], fmt.Sprintf("required"))
 	}
-	if len(errs) > 0 {
-		return Person{}, errs
-	}
-	return res, nil
+	return errs
 }
-func PersonFromJson(bytes []byte) (Person, error) {
-	var v PersonVgen
-	err := json.Unmarshal(bytes, &v)
-	if err != nil {
-		return Person{}, err
+func (t PersonVgen) Convert() Person {
+	var res Person
+	if t.Name != nil {
+		_Name := *t.Name
+		res.Name = _Name
 	}
-	r, err := v.Validate()
-	if err != nil {
-		return Person{}, err
+	if t.Nickname != nil {
+		_Nickname := *t.Nickname
+		res.Nickname = _Nickname
 	}
-	return r, nil
+	if t.Age != nil {
+		_Age := *t.Age
+		res.Age = _Age
+	}
+	return res
 }

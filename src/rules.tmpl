@@ -2,7 +2,7 @@
 {{ end }}
 
 {{ define "i" }}
-struct_errs := _{{ .Name }}.InnerValidation()
+struct_errs := _{{ .Name }}.Validate()
 for path, err_list := range struct_errs {
     for _, err := range err_list {
         errs[{{ .Path }} + "." + path] = append(errs[{{ .Path }} + "." + path], err) 

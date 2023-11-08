@@ -34,9 +34,9 @@ func main() {
 			Street: util.InitP("address2"),
 			Number: util.InitP(10),
 		},
-	}.Validate()
+	}.ValidatedConvert()
 	if err != nil {
-		util.DebugPrintString("err", err.Error())
+		util.DebugPrintAny("err", err)
 	} else {
 		fmt.Printf("person: %v\n", person)
 	}

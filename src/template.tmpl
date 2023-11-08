@@ -18,16 +18,15 @@ type {{ .Name }}Vgen struct {
 {{ end }}
 
 {{ define "struct-validation" }}
-func (t {{ .Name }}Vgen) Validate() ({{ .Name }}, error) {
-    errs :=  t.InnerValidation()
+func (t {{ .Name }}Vgen) ValidatedConvert() ({{ .Name }}, *map[string][]string) {
+    errs :=  t.Validate()
     if len(errs) > 0 {
-        j, _ := json.Marshal(errs)
-        return {{ .Name }}{}, fmt.Errorf("%s", j)
+        return {{ .Name }}{}, &errs
     }
     return t.Convert(), nil
 }
 
-func (t {{ .Name }}Vgen) InnerValidation() map[string][]string {
+func (t {{ .Name }}Vgen) Validate() map[string][]string {
     errs := make(map[string][]string) 
 
     {{ range .Fields }}
@@ -109,7 +108,7 @@ func (t {{ .Name }}Vgen) Convert() {{ .Name }} {
 {{ end }}
 
 {{ define "json-decoding" }} 
-func {{ .Name }}FromJson(bytes []byte) ({{ .Name }}, error) {
+func {{ .Name }}FromJson(bytes []byte) ({{ .Name }}, map[string][]string) {
     var v {{ .Name }}Vgen
 
     err := json.Unmarshal(bytes, &v)
@@ -117,7 +116,7 @@ func {{ .Name }}FromJson(bytes []byte) ({{ .Name }}, error) {
         return {{ .Name }}{}, err
     }
 
-    r, err := v.Validate()
+    r, err := v.ValidatedConvert()
     if err != nil {
         return {{ .Name }}{}, err
     }

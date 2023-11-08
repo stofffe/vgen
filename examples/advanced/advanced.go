@@ -63,9 +63,9 @@ func main() {
 				},
 			},
 		},
-	}.Validate()
+	}.ValidatedConvert()
 	if err != nil {
-		util.DebugPrintString("err", err.Error())
+		util.DebugPrintAny("err", err)
 	} else {
 		fmt.Printf("person: %v\n", person)
 	}

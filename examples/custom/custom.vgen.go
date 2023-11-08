@@ -2,63 +2,71 @@
 // DO NOT EDIT
 package main
 import (
-	"encoding/json"
 	"fmt"
 )
 type PersonVgen struct {
-	Name  *string
-	Age   *int
-	Vibes *bool
+	Name *string `json:"name"`
+	Age *int `json:"age"`
+	Vibes *bool `json:"vibes"`
 }
-func (t PersonVgen) Validate() (Person, error) {
-	person, errs := t.InnerValidation()
+func (t PersonVgen) ValidatedConvert() (Person, *map[string][]string) {
+	errs := t.Validate()
 	if len(errs) > 0 {
-		j, _ := json.Marshal(errs)
-		return Person{}, fmt.Errorf("%s", j)
+		return Person{}, &errs
 	}
-	return person, nil
+	return t.Convert(), nil
 }
-func (t PersonVgen) InnerValidation() (Person, map[string][]string) {
-	res := Person{}
+func (t PersonVgen) Validate() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Name != nil {
-		name := *t.Name
+		_Name := *t.Name
 		{
-			if !(len(name) > 0) {
+			if !(len(_Name) > 0) {
 				errs[fmt.Sprintf("name")] = append(errs[fmt.Sprintf("name")], fmt.Sprintf("can not be empty"))
 			}
-			if err := isBob(name); err != nil {
+			if err := isBob(_Name); err != nil {
 				errs[fmt.Sprintf("name")] = append(errs[fmt.Sprintf("name")], err.Error())
 			}
-			_ = name
 		}
 	} else {
 		errs["name"] = append(errs["name"], fmt.Sprintf("required"))
 	}
 	if t.Age != nil {
-		age := *t.Age
+		_Age := *t.Age
 		{
-			if !(age > 18) {
+			if !(_Age > 18) {
 				errs[fmt.Sprintf("age")] = append(errs[fmt.Sprintf("age")], fmt.Sprintf("must be > 18"))
 			}
-			if !(age < 22) {
+			if !(_Age < 22) {
 				errs[fmt.Sprintf("age")] = append(errs[fmt.Sprintf("age")], fmt.Sprintf("must be < 22"))
 			}
-			_ = age
 		}
 	} else {
 		errs["age"] = append(errs["age"], fmt.Sprintf("required"))
 	}
 	if t.Vibes != nil {
-		vibes := *t.Vibes
+		_Vibes := *t.Vibes
 		{
-			_ = vibes
+			_ = _Vibes
 		}
 	} else {
 		errs["vibes"] = append(errs["vibes"], fmt.Sprintf("required"))
 	}
-	if len(errs) > 0 {
-		return Person{}, errs
+	return errs
+}
+func (t PersonVgen) Convert() Person {
+	var res Person
+	if t.Name != nil {
+		_Name := *t.Name
+		res.Name = _Name
 	}
-	return res, nil
+	if t.Age != nil {
+		_Age := *t.Age
+		res.Age = _Age
+	}
+	if t.Vibes != nil {
+		_Vibes := *t.Vibes
+		res.Vibes = _Vibes
+	}
+	return res
 }

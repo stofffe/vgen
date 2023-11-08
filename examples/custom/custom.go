@@ -25,9 +25,9 @@ func main() {
 		Name:  util.InitP("helo"),
 		Age:   util.InitP(17),
 		Vibes: nil,
-	}.Validate()
+	}.ValidatedConvert()
 	if err != nil {
-		util.DebugPrintString("err", err.Error())
+		util.DebugPrintAny("err", err)
 	} else {
 		fmt.Printf("person: %v\n", person)
 	}

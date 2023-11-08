@@ -2,22 +2,20 @@
 // DO NOT EDIT
 package main
 import (
-	"encoding/json"
 	"fmt"
 )
 type PersonVgen struct {
 	Nicknames *[]string `json:"nicknames"`
 	A *[][]string `json:"a"`
 }
-func (t PersonVgen) Validate() (Person, error) {
-	errs := t.InnerValidation()
+func (t PersonVgen) ValidatedConvert() (Person, *map[string][]string) {
+	errs := t.Validate()
 	if len(errs) > 0 {
-		j, _ := json.Marshal(errs)
-		return Person{}, fmt.Errorf("%s", j)
+		return Person{}, &errs
 	}
 	return t.Convert(), nil
 }
-func (t PersonVgen) InnerValidation() map[string][]string {
+func (t PersonVgen) Validate() map[string][]string {
 	errs := make(map[string][]string)
 	if t.Nicknames != nil {
 		_Nicknames := *t.Nicknames
@@ -78,16 +76,4 @@ func (t PersonVgen) Convert() Person {
 		}
 	}
 	return res
-}
-func PersonFromJson(bytes []byte) (Person, error) {
-	var v PersonVgen
-	err := json.Unmarshal(bytes, &v)
-	if err != nil {
-		return Person{}, err
-	}
-	r, err := v.Validate()
-	if err != nil {
-		return Person{}, err
-	}
-	return r, nil
 }

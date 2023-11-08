@@ -35,9 +35,9 @@ func main() {
 		}, {
 			{value: util.InitP("3")},
 		}},
-	}.Validate()
+	}.ValidatedConvert()
 	if err != nil {
-		util.DebugPrintString("err", err.Error())
+		util.DebugPrintAny("err", err)
 	} else {
 		fmt.Printf("person: %v\n", person)
 	}
