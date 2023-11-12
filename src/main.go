@@ -19,47 +19,51 @@ func main() {
 	if len(args) == 0 {
 		log.Fatal("must supply file path")
 	}
-	path := args[0]
-	path_info, err := os.Stat(path)
-	if err != nil {
-		log.Fatalf("could not open file %s", path)
-	}
 
-	// parse single file
-	if !path_info.IsDir() {
-		handleFile(path)
-		return
-	}
-
-	// parse directory
-	err = filepath.Walk(path, func(current_path string, info os.FileInfo, err error) error {
+	for _, path := range args {
+		path_info, err := os.Stat(path)
 		if err != nil {
-			return err
+			log.Fatalf("could not open file %s", path)
 		}
 
-		// recursive check
-		if info.IsDir() {
-			if !recursive_flag && current_path != path {
-				return filepath.SkipDir
-			} else {
+		// parse single file
+		if !path_info.IsDir() {
+			handleFile(path)
+			return
+		}
+
+		// parse directory
+		err = filepath.Walk(path, func(current_path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// recursive check
+			if info.IsDir() {
+				if !recursive_flag && current_path != path {
+					return filepath.SkipDir
+				} else {
+					return nil
+				}
+			}
+
+			// skip generated files
+			if strings.HasSuffix(info.Name(), ".vgen.go") {
 				return nil
 			}
-		}
 
-		// skip generated files
-		if strings.HasSuffix(info.Name(), ".vgen.go") {
+			err = handleFile(current_path)
+			if err != nil {
+				fmt.Printf("%s: %v\n", current_path, err)
+			}
 			return nil
+		})
+		if err != nil {
+			log.Fatalf("error walking file tree: %v", err)
 		}
 
-		err = handleFile(current_path)
-		if err != nil {
-			fmt.Printf("%s: %v\n", current_path, err)
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("error walking file tree: %v", err)
 	}
+
 }
 
 func handleFile(path string) error {
