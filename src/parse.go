@@ -278,7 +278,9 @@ func parseStructField(node *ast.Field) (StructField, error) {
 	var rules Rules
 	var err error
 	if node.Comment != nil {
-		rules, err = parseRules(node.Comment.Text(), name, alias)
+		comment_pos := int(node.Comment.Pos())
+		comment_value := node.Comment.List[0].Text
+		rules, err = parseRules(comment_value, name, alias, comment_pos)
 		if err != nil {
 			return StructField{}, fmt.Errorf("could not parse rules on %v: %v", name, err)
 		}

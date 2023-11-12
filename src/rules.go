@@ -8,8 +8,12 @@ import (
 
 // String to rules
 
-func parseRules(input string, name, alias string) (Rules, error) {
-	lexer := NexLexer(input)
+func parseRules(input, name, alias string, pos int) (Rules, error) {
+	// remove comment
+	input = input[2:]
+	pos += 2
+
+	lexer := NexLexer(input, pos)
 	lexer.Lex()
 
 	parser := NewParser(lexer, name, alias)
@@ -26,24 +30,28 @@ func parseRules(input string, name, alias string) (Rules, error) {
 //
 
 type Lexer struct {
-	pos    int
-	input  string
-	tokens []Token
+	file_pos int
+	input    string
+	tokens   []Token
 }
 
-func NexLexer(input string) Lexer {
+func NexLexer(input string, pos int) Lexer {
 	// regex match neccesary info
-	reg := regexp.MustCompile(`vgen:(\[.+\])`)
+	reg := regexp.MustCompile(`(.*vgen:)(\[.+\])(.*)`)
 	matches := reg.FindStringSubmatch(input)
 	if len(matches) == 0 {
 		return Lexer{}
 	}
-	match := matches[1]
+
+	prefix := matches[1]
+	match := matches[2]
+
+	pos += len(prefix)
 
 	return Lexer{
-		pos:    0,
-		input:  match,
-		tokens: []Token{},
+		file_pos: pos,
+		input:    match,
+		tokens:   []Token{},
 	}
 }
 
@@ -86,6 +94,11 @@ func (t TokenType) String() string {
 type Token struct {
 	typ   TokenType
 	value string
+	pos   int
+}
+
+func (t Token) FilePosition() {
+
 }
 
 func (l *Lexer) Lex() {
@@ -112,21 +125,22 @@ func (l *Lexer) Lex() {
 		n := l.Consume()
 		switch n {
 		case '[':
-			l.AddToken(Token{typ: LEFT_BRACE})
+			l.AddToken(Token{typ: LEFT_BRACE, pos: l.file_pos})
 		case ']':
-			l.AddToken(Token{typ: RIGHT_BRACE})
+			l.AddToken(Token{typ: RIGHT_BRACE, pos: l.file_pos})
 		case ',':
-			l.AddToken(Token{typ: COMMA})
+			l.AddToken(Token{typ: COMMA, pos: l.file_pos})
 		case '=':
-			l.AddToken(Token{typ: EQUAL})
+			l.AddToken(Token{typ: EQUAL, pos: l.file_pos})
 		case ':':
-			l.AddToken(Token{typ: COLON})
+			l.AddToken(Token{typ: COLON, pos: l.file_pos})
 		case ' ', '\t':
-			l.AddToken(Token{typ: SPACE})
+			l.AddToken(Token{typ: SPACE, pos: l.file_pos})
 		default:
-			l.AddToken(Token{typ: ILLEGAL, value: string(n)})
+			l.AddToken(Token{typ: ILLEGAL, value: string(n), pos: l.file_pos})
 			return
 		}
+		l.file_pos++
 	}
 }
 
@@ -135,24 +149,30 @@ func (l *Lexer) LexQuote() {
 }
 
 func (l *Lexer) LexNumber() {
+	pos := l.file_pos
 	number := []rune{}
 	for l.InputLeft() && unicode.IsDigit(l.Peek()) {
 		number = append(number, l.Consume())
+		l.file_pos++
 	}
 	l.AddToken(Token{
 		typ:   NUMBER,
 		value: string(number),
+		pos:   pos,
 	})
 }
 
 func (l *Lexer) LexString() {
+	pos := l.file_pos
 	rule := []rune{}
 	for l.InputLeft() && (l.Peek() == '_' || unicode.IsLetter(l.Peek())) {
 		rule = append(rule, l.Consume())
+		l.file_pos++
 	}
 	l.AddToken(Token{
 		typ:   IDENT,
 		value: string(rule),
+		pos:   pos,
 	})
 }
 
@@ -174,7 +194,7 @@ func (l *Lexer) Consume() rune {
 
 func PrintTokens(tokens []Token) {
 	for _, token := range tokens {
-		fmt.Printf("%s\t%s\n", TOKEN_NAMES[token.typ], token.value)
+		fmt.Printf("%s\t%s\t%d\n", TOKEN_NAMES[token.typ], token.value, token.pos)
 	}
 }
 
@@ -389,7 +409,7 @@ func (p *Parser) expectIdentRule(rule string) error {
 func (p *Parser) expectToken(expected TokenType) (Token, error) {
 	token := p.Consume()
 	if token.typ != expected {
-		return Token{}, fmt.Errorf("unexpected token %s expected %s", token.typ.String(), expected.String())
+		return Token{}, fmt.Errorf("unexpected token at byte pos %d: expected %s got %s", token.pos, expected.String(), token.typ.String())
 	}
 	return token, nil
 }
