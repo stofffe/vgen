@@ -94,16 +94,16 @@ func (t {{ .Name }}Vgen) Convert() {{ .Name }} {
 {{ end }}
 
 {{ define "list-field-convert-outer" }} 
-    res.{{ .Name }}{{ .Test2 }} = make({{ .ConvertTyp }}, len(_{{ .Name }}))
+    res.{{ .Name }}{{ .Path }} = make({{ .ConvertTyp }}, len(_{{ .Name }}))
     for i{{ .Depth }}, _{{ .Name }} := range _{{ .Name }} {
         {{ .Inner.ConvertCode }} 
     }
 {{ end }}
 
 {{ define "list-field-convert-inner" }} 
-    res.{{ .Name }}{{ .Test2 }} = make({{ .ConvertTyp }}, len(_{{ .Name }}))
+    res.{{ .Name }}{{ .Path }} = make({{ .ConvertTyp }}, len(_{{ .Name }}))
     for i{{ .Depth }}, _{{ .Name }} := range _{{ .Name }} {
-        res.{{ .Name }}{{ .Test1 }} = _{{ .Name }}{{ .Test3 }}
+        res.{{ .Name }}{{ .InnerPath }} = _{{ .Name }}{{ .InnerConvert }}
     }
 {{ end }}
 

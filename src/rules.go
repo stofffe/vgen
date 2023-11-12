@@ -104,7 +104,8 @@ func (l *Lexer) Lex() {
 			continue
 		}
 
-		// Custom
+		// Custom error messages
+		// TODO
 		if l.Peek() == '"' {
 
 		}

@@ -82,24 +82,22 @@ func (f PrimField) ConvertTyp() string { return f.typ }
 func (f TypeField) ConvertTyp() string { return f.typ }
 func (f ListField) ConvertTyp() string { return "[]" + f.inner.ConvertTyp() }
 
-func (f ListField) Test3() string {
+func (f ListField) InnerConvert() string {
 	if _, ok := f.inner.(TypeField); ok {
 		return ".Convert()"
 	}
 	return ""
 }
-
-// TODO clean up
-func (f ListField) Test1() string {
+func (f ListField) Path() string {
 	res := ""
-	for i := 0; i < f.depth+1; i++ {
+	for i := 0; i < f.depth; i++ {
 		res += fmt.Sprintf("[i%d]", i)
 	}
 	return res
 }
-func (f ListField) Test2() string {
+func (f ListField) InnerPath() string {
 	res := ""
-	for i := 0; i < f.depth; i++ {
+	for i := 0; i < f.depth+1; i++ {
 		res += fmt.Sprintf("[i%d]", i)
 	}
 	return res
