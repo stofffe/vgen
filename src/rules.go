@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"unicode"
 )
 
@@ -33,9 +32,6 @@ type Lexer struct {
 }
 
 func NexLexer(input string) Lexer {
-	// remove whitespace
-	input = strings.ReplaceAll(input, " ", "")
-
 	// regex match neccesary info
 	reg := regexp.MustCompile(`vgen:(\[.+\])`)
 	matches := reg.FindStringSubmatch(input)
@@ -67,6 +63,7 @@ const (
 	NUMBER
 	COLON
 	QUOTE
+	SPACE
 )
 
 var TOKEN_NAMES = map[TokenType]string{
@@ -79,6 +76,7 @@ var TOKEN_NAMES = map[TokenType]string{
 	NUMBER:      "NUMBER",
 	COLON:       "COLON",
 	QUOTE:       "QUOTE",
+	SPACE:       "SPACE",
 }
 
 func (t TokenType) String() string {
@@ -123,6 +121,8 @@ func (l *Lexer) Lex() {
 			l.AddToken(Token{typ: EQUAL})
 		case ':':
 			l.AddToken(Token{typ: COLON})
+		case ' ', '\t':
+			l.AddToken(Token{typ: SPACE})
 		default:
 			l.AddToken(Token{typ: ILLEGAL, value: string(n)})
 			return
@@ -218,11 +218,22 @@ func (p *Parser) Peek() Token {
 	return p.tokens[0]
 }
 
+func (p *Parser) PeekTyp(typ TokenType) bool {
+	return p.Peek().typ == typ
+}
+
 // TODO add ok check to this
 func (p *Parser) Consume() Token {
 	r := p.tokens[0]
 	p.tokens = p.tokens[1:]
 	return r
+}
+
+// Consumes zero or more spaces
+func (p *Parser) consumeSpaces() {
+	for p.TokensLeft() && p.PeekTyp(SPACE) {
+		p.Consume()
+	}
 }
 
 func (p *Parser) Parse() error {
@@ -237,6 +248,7 @@ func (p *Parser) expectRules() error {
 	if !p.TokensLeft() {
 		return nil
 	}
+
 	// [<rule>]<rules>
 	_, err := p.expectToken(LEFT_BRACE)
 	if err != nil {
@@ -247,16 +259,20 @@ func (p *Parser) expectRules() error {
 	if err != nil {
 		return err
 	}
+
 	_, err = p.expectToken(RIGHT_BRACE)
 	if err != nil {
 		return err
 	}
+
 	return p.expectRules()
 }
 
 func (p *Parser) expectRule() error {
+	p.consumeSpaces()
+
 	// handle empty
-	if p.Peek().typ == RIGHT_BRACE {
+	if p.PeekTyp(RIGHT_BRACE) {
 		return nil
 	}
 
@@ -295,10 +311,11 @@ func (p *Parser) expectRule() error {
 		return fmt.Errorf("unexpected rule %s", rule)
 	}
 
-	if p.Peek().typ == COMMA {
+	if p.PeekTyp(COMMA) {
 		p.Consume()
 		return p.expectRule()
 	}
+
 	return nil
 }
 
@@ -322,6 +339,8 @@ func (p *Parser) expectNoArgRule(rule string) error {
 			depth: p.depth,
 		})
 	}
+
+	p.consumeSpaces()
 	return nil
 }
 
@@ -341,6 +360,8 @@ func (p *Parser) expectDecimalRule(rule string) error {
 		param: token.value,
 		depth: p.depth,
 	})
+
+	p.consumeSpaces()
 	return nil
 }
 
@@ -360,6 +381,8 @@ func (p *Parser) expectIdentRule(rule string) error {
 		param: token.value,
 		depth: p.depth,
 	})
+
+	p.consumeSpaces()
 	return nil
 }
 

@@ -28,7 +28,10 @@ func main() {
 
 		// parse single file
 		if !path_info.IsDir() {
-			handleFile(path)
+			err := handleFile(path)
+			if err != nil {
+				fmt.Printf("%s: %v\n", path, err)
+			}
 			return
 		}
 
