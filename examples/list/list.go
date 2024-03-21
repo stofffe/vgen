@@ -8,8 +8,8 @@ import (
 
 // vgen:[i]
 type Person struct {
-	Nicknames []string   `json:"nicknames"` // vgen:[ len_gt=3 ][ not_empty ]
-	A         [][]string `json:"a"`         // vgen:[ not_empty ][ len_gt=1 ][ custom=isBob, not_empty ]
+	Nicknames []string   `json:"nicknames"` // vgen:[ len_gt=3 ]
+	A         [][]string `json:"a"`         // vgen:[ custom=isBob, not_empty ]
 }
 
 func isBob(t string) error {

@@ -29,6 +29,9 @@ func (t PersonVgen) Validate() map[string][]string {
 			for i0, _A := range _A {
 				for i1, _A := range _A {
 					path := fmt.Sprintf("a[%d][%d]", i0, i1)
+					if err := isBob(_A); err != nil {
+						errs[path] = append(errs[path], err.Error())
+					}
 					if !(len(_A) > 0) {
 						errs[path] = append(errs[path], fmt.Sprintf("can not be empty"))
 					}

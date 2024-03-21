@@ -233,9 +233,9 @@ func parseStructField(node *ast.Field) (StructField, error) {
 		// fmt.Println(alias, s)
 	}
 
-	if len(rules.rules) == 0 && !rules.include && !rules.required {
-		return StructField{}, fmt.Errorf("empty fields not allowed")
-	}
+	// if len(rules.rules) == 0 && !rules.include && !rules.required {
+	// 	return StructField{}, fmt.Errorf("empty fields not allowed")
+	// }
 
 	// parse
 	depth, inner, err := getDepth(node.Type, 0)

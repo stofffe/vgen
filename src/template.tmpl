@@ -76,9 +76,11 @@ func (t {{ .Name }}Vgen) Convert() {{ .Name }} {
             {{ else if not .Include }}
                 res.{{ .Name }} = _{{ .Name }}
             {{ else }}
-                res.{{ .Name }} = make({{ range $i := iterate .Depth }}[]{{ end }}{{ .InnerTyp }}, len(_{{ .Name }}))
                 {{ $field := . }}
-                {{ range $i := iterate .Depth }} for i{{ $i }}, _{{ $field.Name }} := range _{{ $field.Name }} { {{ end }}
+                {{ range $i := iterate .Depth }} 
+                        res.{{ $field.Name }}{{ range $i := iterate $i }}[i{{ $i }}]{{ end }} = make({{ range $i := iterate (sub $field.Depth $i ) }}[]{{ end }}{{ $field.InnerTyp }}, len(_{{ $field.Name }}))
+                    for i{{ $i }}, _{{ $field.Name }} := range _{{ $field.Name }} { 
+                {{ end }}
                 res.{{ .Name }}{{ range $i := iterate .Depth }}[i{{ $i }}]{{ end }} = _{{ .Name }}{{ if .Include }} .Convert() {{ end }}
                 {{ range iterate .Depth }} } {{ end }}
             {{ end }}

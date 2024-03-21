@@ -39,6 +39,12 @@ func generateFile(info ParseInfo) ([]byte, error) {
 			}
 			return buffer.String(), nil
 		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
 	}).Parse(template_str + rules_str)
 	if err != nil {
 		return []byte{}, fmt.Errorf("could not parse template file: %v", err)

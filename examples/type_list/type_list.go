@@ -13,12 +13,12 @@ type Name struct {
 
 // vgen:[i]
 type Person struct {
-	A string     // vgen:[ req ]
-	B []string   // vgen:[ ][ ]
-	C [][]string // vgen:[ ][ ][ ]
-	D Name       // vgen:[ i, req ]
-	E []Name     // vgen:[ ][ i ]
-	F [][]Name   // vgen:[ ][ ][ i ]
+	A string // vgen:[ req, not_empty ]
+	B []string
+	C [][]string
+	D Name // vgen:[ i, req ]
+	E []Name
+	F [][]Name // vgen:[ i ]
 }
 
 func main() {
@@ -27,9 +27,7 @@ func main() {
 		B: &[]string{"1", "2"},
 		C: &[][]string{{"1", "2"}, {"3", "4"}},
 		D: &NameVgen{value: util.InitP("hello")},
-		E: &[]NameVgen{
-			{value: util.InitP("hello")},
-		},
+		E: &[]Name{{value: "hello"}},
 		F: &[][]NameVgen{{
 			{value: util.InitP("1")}, {value: util.InitP("2")},
 		}, {
