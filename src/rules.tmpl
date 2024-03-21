@@ -1,72 +1,59 @@
-{{ define "req" }}
-{{ end }}
-
-{{ define "i" }}
-struct_errs := _{{ .Name }}.Validate()
-for path, err_list := range struct_errs {
-    for _, err := range err_list {
-        errs[{{ .Path }} + "." + path] = append(errs[{{ .Path }} + "." + path], err) 
-    }    
-}
-_{{ .Name}} := _{{ .Name }}.Convert()
-{{ end }}
-
 {{ define "not_empty" }}
-if !(len(_{{ .Name }}) > 0) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("can not be empty"))
+if !(len(_{{ .Field.Name }}) > 0) {
+    errs[path] = append(errs[path], fmt.Sprintf("can not be empty"))
 }
 {{ end }}
 
 {{ define "custom" }}
-if err := {{ .Param }}(_{{ .Name }}); err != nil {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], err.Error())
+if err := {{ .Param }}(_{{ .Field.Name }}); err != nil {
+    errs[path] = append(errs[path], err.Error())
 }
 {{ end }}
 
 {{ define "gt" }}
-if !(_{{ .Name }} > {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be > {{ .Param }}"))
+if !(_{{ .Field.Name }} > {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("must be > {{ .Param }}"))
 }
 {{ end }}
 
 {{ define "lt" }}
-if !(_{{ .Name }} < {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be < {{ .Param }}"))
+if !(_{{ .Field.Name }} < {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("must be < {{ .Param }}"))
 }
 {{ end }}
 
 {{ define "gte" }}
-if !(_{{ .Name }} >= {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be >= {{ .Param }}"))
+if !(_{{ .Field.Name }} >= {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("must be >= {{ .Param }}"))
 }
 {{ end }}
 
 {{ define "lte" }}
-if !(_{{ .Name }} <= {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("must be <= {{ .Param }}"))
+if !(_{{ .Field.Name }} <= {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("must be <= {{ .Param }}"))
 }
 {{ end }}
 
 {{ define "len_gt" }}
-if !(len(_{{ .Name }}) > {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be > {{ .Param }}"))
+if !(len(_{{ .Field.Name }}) > {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("len must be > {{ .Param }}"))
 }
 {{ end }}
 
 {{ define "len_lt" }}
-if !(len(_{{ .Name }}) < {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be < {{ .Param }}"))
+if !(len(_{{ .Field.Name }}) < {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("len must be < {{ .Param }}"))
 }
 {{ end }}
 
 {{ define "len_gte" }}
-if !(len(_{{ .Name }}) >= {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be >= {{ .Param }}"))
+if !(len(_{{ .Field.Name }}) >= {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("len must be >= {{ .Param }}"))
 }
 {{ end }}
 
 {{ define "len_lte" }}
-if !(len(_{{ .Name }}) >= {{ .Param }}) {
-    errs[{{ .Path }}] = append(errs[{{ .Path }}], fmt.Sprintf("len must be >= {{ .Param }}"))
+if !(len(_{{ .Field.Name }}) >= {{ .Param }}) {
+    errs[path] = append(errs[path], fmt.Sprintf("len must be >= {{ .Param }}"))
 }
 {{ end }}

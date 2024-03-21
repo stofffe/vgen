@@ -55,6 +55,7 @@ func main() {
 				return nil
 			}
 
+			// handle file
 			err = handleFile(current_path)
 			if err != nil {
 				fmt.Printf("%s: %v\n", current_path, err)

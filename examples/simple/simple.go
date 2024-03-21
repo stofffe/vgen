@@ -15,6 +15,7 @@ type Email struct {
 
 func main() {
 	email, err := EmailVgen{
+		Title:  nil,
 		Text:   util.InitP("hello"),
 		Sender: util.InitP(""),
 	}.ValidatedConvert()

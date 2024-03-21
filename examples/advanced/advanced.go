@@ -17,8 +17,8 @@ type Person struct {
 	Name       string      `json:"name"`       // vgen:[ req, not_empty, len_lt=20 ]
 	Address1   Address     `json:"address1"`   // vgen:[ custom=valAddr ]
 	Address2   Address     `json:"address2"`   // vgen:[ i, req, custom=valAddr ]
-	Addresses  []Address   `json:"addresses"`  // vgen:[ req ][ i ]
-	Addresses2 [][]Address `json:"addresses2"` // vgen:[ req ][ ][ i ]
+	Addresses  []Address   `json:"addresses"`  // vgen:[ req ]
+	Addresses2 [][]Address `json:"addresses2"` // vgen:[ req, i, custom=valAddr ]
 }
 
 func abc(addr Address) error {
@@ -40,10 +40,10 @@ func main() {
 			Street: util.InitP("address2"),
 			Number: util.InitP(1),
 		},
-		Addresses: &[]AddressVgen{
+		Addresses: &[]Address{
 			{
-				Street: util.InitP("address2"),
-				Number: util.InitP(1),
+				Street: "address2",
+				Number: 1,
 			},
 		},
 		Addresses2: &[][]AddressVgen{

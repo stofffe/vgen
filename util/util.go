@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
-	"strings"
 )
 
 // initialze pointer
@@ -42,24 +40,3 @@ func DebugPrintString(name string, val string) {
 }
 
 // TODO does not work with multiple tags
-
-func ExtractJsonName(tag, backup string) string {
-	reg := regexp.MustCompile(`json:"[^"]*"`)
-	match := reg.FindString(tag)
-	match = strings.TrimPrefix(match, `json:"`)
-	match = strings.TrimSuffix(match, `"`)
-	match = strings.Split(match, ",")[0]
-	if match == "" {
-		return backup
-	}
-	return match
-}
-
-// func LowerFirstChar(str string) string {
-// 	if str == "" {
-// 		return str
-// 	}
-// 	firstchar := []rune(str)[0]
-// 	firstchar = unicode.ToLower(firstchar)
-// 	return string(firstchar) + str[1:]
-// }
