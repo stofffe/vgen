@@ -110,7 +110,7 @@ func cleanCommand(args []string, recursive, verbose bool) {
 
 	if verbose {
 		fmt.Printf("errors: %d\n", len(errors))
-		for e := range errors {
+		for _, e := range errors {
 			fmt.Println(e)
 		}
 	}
@@ -204,7 +204,7 @@ func generateCommand(args []string, recursive, verbose bool) {
 	}
 	if verbose {
 		fmt.Printf("errors: %d\n", len(errors))
-		for e := range errors {
+		for _, e := range errors {
 			fmt.Println(e)
 		}
 	}

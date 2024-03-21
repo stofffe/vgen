@@ -114,7 +114,7 @@ func parseFile(path string) (ParseInfo, error) {
 		if node, ok := n.(*ast.GenDecl); ok {
 			parsed_types, err := parseGenDecl(node)
 			if err != nil {
-				file_err = fmt.Errorf("could not parse gen decl: %v\n", err)
+				file_err = fmt.Errorf("could not parse gen decl: %v", err)
 				return false
 			}
 			for _, s := range parsed_types {
@@ -194,6 +194,8 @@ func parseStructType(node *ast.StructType, name string) (StructType, error) {
 		return StructType{}, fmt.Errorf("empty structs not supported")
 	}
 
+	// TODO extract fields into (name, type, rules) and then parse
+
 	// parse
 	struct_type := StructType{
 		name:   name,
@@ -205,6 +207,18 @@ func parseStructType(node *ast.StructType, name string) (StructType, error) {
 			return StructType{}, fmt.Errorf("could not parse field: %v", err)
 		}
 		struct_type.fields = append(struct_type.fields, field)
+	}
+
+	// require at least one rule
+	hasRule := false
+	for _, field := range struct_type.fields {
+		if len(field.rules) > 0 || field.include || field.required {
+			hasRule = true
+			break
+		}
+	}
+	if !hasRule {
+		return StructType{}, fmt.Errorf("structs must have at least one rule")
 	}
 
 	return struct_type, nil
