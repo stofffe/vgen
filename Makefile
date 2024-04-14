@@ -1,6 +1,9 @@
 build:
 	@go build -o bin/vgen src/*.go
-	@echo "binary created in bin/vgen"
+
+
+
+
 
 compile_simple:
 	@make build && ./bin/vgen examples/simple/simple.go

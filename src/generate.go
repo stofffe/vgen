@@ -2,11 +2,18 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"go/format"
 	"strings"
 	"text/template"
 )
+
+//go:embed template.tmpl
+var template_str string
+
+//go:embed rules.tmpl
+var rules_str string
 
 var tmpl *template.Template
 
@@ -15,7 +22,30 @@ func generateFile(info ParseInfo) ([]byte, error) {
 
 	// init global tmpl and parse template
 	var err error
-	tmpl, err = template.New("template").ParseFiles("src/template.tmpl", "src/rules.tmpl")
+	tmpl, err = template.New("template").Funcs(template.FuncMap{
+		"iterate": func(count int) []int {
+			var i int
+			var Items []int
+			for i = 0; i < count; i++ {
+				Items = append(Items, i)
+			}
+			return Items
+		},
+		"call": func(name string, data interface{}) (string, error) {
+			var buffer bytes.Buffer
+			err := tmpl.ExecuteTemplate(&buffer, name, data)
+			if err != nil {
+				return "", err
+			}
+			return buffer.String(), nil
+		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+	}).Parse(template_str + rules_str)
 	if err != nil {
 		return []byte{}, fmt.Errorf("could not parse template file: %v", err)
 	}
@@ -46,12 +76,17 @@ func generateFile(info ParseInfo) ([]byte, error) {
 			return []byte{}, fmt.Errorf("could not execute struct-convert: %v", err)
 		}
 
+		// validation and conversion
+		err = tmpl.ExecuteTemplate(&buffer, "struct-validation-convert", struct_type)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not execute struct-convert: %v", err)
+		}
+
 		// json decoding
 		// err = tmpl.ExecuteTemplate(&buffer, "json-decoding", struct_type)
 		// if err != nil {
 		// 	return []byte{}, fmt.Errorf("could not execute json-decoding: %v", err)
 		// }
-
 	}
 
 	// debug
@@ -72,39 +107,4 @@ func generateFile(info ParseInfo) ([]byte, error) {
 
 	return bytes, nil
 
-}
-
-func templateToString(name string, data any) (string, error) {
-	var buffer bytes.Buffer
-	err := tmpl.ExecuteTemplate(&buffer, name, data)
-	if err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
-
-func (f PrimField) ValidationCode() (string, error) {
-	return templateToString("prim-field-validation", f)
-}
-func (f TypeField) ValidationCode() (string, error) {
-	return templateToString("type-field-validation", f)
-}
-func (f ListField) ValidationCode() (string, error) {
-	return templateToString("list-field-validation", f)
-}
-func (r Rule) Code() (string, error) {
-	return templateToString(r.rule, r)
-}
-
-func (f PrimField) ConvertCode() (string, error) {
-	return templateToString("prim-field-convert", f)
-}
-func (f TypeField) ConvertCode() (string, error) {
-	return templateToString("type-field-convert", f)
-}
-func (f ListField) ConvertCode() (string, error) {
-	if _, ok := f.inner.(ListField); ok {
-		return templateToString("list-field-convert-outer", f)
-	}
-	return templateToString("list-field-convert-inner", f)
 }

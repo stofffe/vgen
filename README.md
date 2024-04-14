@@ -31,7 +31,7 @@ func EmailFromJson(bytes []byte) (Email, error) { ... }
 
 This would be the response for an example json request
 
-```
+```json
 {
     "title": "this is a hello message that is too long",
     "text": "",
@@ -52,11 +52,11 @@ This would be the response for an example json request
 
 ### Lists
 
-Lists are also supported. The rules inside the square brackets [ ] apply to the corresponding type read from left to right, in this case (outer list, inner, list, int value)
+Lists are also supported. Rules will be applied to all elements. 
 ```go
 // vgen:[i]
 type TicTacToe struct {
-    Board [][]int `json:"board"` // vgen:[ req, len=3 ][ len=3 ][ gte=0, lte=1 ]
+    Board [][]int `json:"board"` // vgen:[gte=0, lte=1 ]
 }
 ```
 
