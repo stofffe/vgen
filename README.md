@@ -31,7 +31,7 @@ func EmailFromJson(bytes []byte) (Email, error) { ... }
 
 This would be the response for an example json request
 
-```json
+```
 {
     "title": "this is a hello message that is too long",
     "text": "",
@@ -56,7 +56,7 @@ Lists are also supported. Rules will be applied to all elements.
 ```go
 // vgen:[i]
 type TicTacToe struct {
-    Board [][]int `json:"board"` // vgen:[gte=0, lte=1 ]
+    Board [][]int `json:"board"` // vgen:[ gte=0, lte=1 ]
 }
 ```
 
