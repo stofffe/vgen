@@ -23,13 +23,13 @@ func main() {
 		age:  &age,
 		nicknames: &[]string{
 			"notbob1",
-			"notbob2",
+			"bob2",
 		},
-		matrix: &[][]int{
-			{1, 0, 0},
-			{0, 1, 0},
-			{0, 0, 1},
-		},
+		// matrix: &[][]int{
+		// 	{1, 0, 0},
+		// 	{0, 1, 0},
+		// 	{0, 0, 1},
+		// },
 		stats: &stats,
 	}
 
@@ -38,13 +38,13 @@ func main() {
 			vgen.Eq("bob"),
 		),
 		age: vgen.NewRules(true,
-			vgen.Lte(5),
-			vgen.Gte(120),
+			vgen.CustomMessage("not allowed to drive", vgen.Gte(18)),
+			vgen.OneOf(1, 2, 3, 4, 5),
+			vgen.NotOneOf(10, 11, 12),
 		),
 		nicknames: vgen.NewRules(true,
 			vgen.List(
-				vgen.CustomMessage("test", vgen.Eq("bob1")),
-				vgen.Eq("bob2"),
+				vgen.OneOf("bob1", "bob2"),
 			),
 		),
 		matrix: vgen.NewRules(true,

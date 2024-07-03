@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"slices"
 )
 
 //
@@ -206,6 +207,24 @@ func LenLte[T any](value int) Rule[[]T] {
 	return func(field_name string, input []T) ErrorMap {
 		if !(len(input) <= value) {
 			return SingleError(field_name, fmt.Errorf("len not less than or equal to %v", value))
+		}
+		return nil
+	}
+}
+
+func OneOf[T comparable](values ...T) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
+		if !slices.Contains(values, input) {
+			return SingleError(field_name, fmt.Errorf("not one of %v", values))
+		}
+		return nil
+	}
+}
+
+func NotOneOf[T comparable](values ...T) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
+		if slices.Contains(values, input) {
+			return SingleError(field_name, fmt.Errorf("is one of %v", values))
 		}
 		return nil
 	}
