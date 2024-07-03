@@ -11,10 +11,13 @@ type Person struct {
 	age       int
 	nicknames []string
 	matrix    [][]int
+	stats     map[string]int
 }
 
 func main() {
 	age := 12
+	stats := make(map[string]int)
+	stats["stamina"] = 25
 	person := PersonVgen{
 		name: nil,
 		age:  &age,
@@ -27,6 +30,7 @@ func main() {
 			{0, 1, 0},
 			{0, 0, 1},
 		},
+		stats: &stats,
 	}
 
 	rules := PersonRules{
@@ -38,18 +42,23 @@ func main() {
 			vgen.Gte(120),
 		),
 		nicknames: vgen.NewRules(true,
-			vgen.Each(
+			vgen.List(
 				vgen.CustomMessage("test", vgen.Eq("bob1")),
 				vgen.Eq("bob2"),
 			),
 		),
 		matrix: vgen.NewRules(true,
 			vgen.LenEq[[]int](3),
-			vgen.Each(
+			vgen.List(
 				vgen.LenEq[int](3),
-				vgen.Each(
+				vgen.List(
 					vgen.Eq(1),
 				),
+			),
+		),
+		stats: vgen.NewRules(true,
+			vgen.MapValue(
+				vgen.Eq(100),
 			),
 		),
 	}

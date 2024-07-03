@@ -44,6 +44,76 @@ func (r Rules[T]) Validate(field_name string, value *T) ErrorMap {
 // Rule implementations
 //
 
+func List[T any](rules ...Rule[T]) Rule[[]T] {
+	return func(field_name string, input []T) ErrorMap {
+		errors := make(ErrorMap)
+		for i, element := range input {
+			for _, rule := range rules {
+				err := rule(fmt.Sprintf("%s[%d]", field_name, i), element)
+				errors.AddErrors(err)
+			}
+		}
+		if len(errors) > 0 {
+			return errors
+		}
+		return nil
+	}
+}
+
+func MapValue[V any](value_rules ...Rule[V]) Rule[map[string]V] {
+	return func(field_name string, input map[string]V) ErrorMap {
+		errors := make(ErrorMap)
+		for key, value := range input {
+			for _, rule := range value_rules {
+				value_err := rule(fmt.Sprintf("%s.%s", field_name, key), value)
+				errors.AddErrors(value_err)
+			}
+		}
+		if len(errors) > 0 {
+			return errors
+		}
+		return nil
+	}
+}
+
+// Currently no distinction between key and value errors
+
+// func MapKey[V any](key_rules ...Rule[string]) Rule[map[string]V] {
+// 	return func(field_name string, input map[string]V) ErrorMap {
+// 		errors := make(ErrorMap)
+// 		for key := range input {
+// 			for _, rule := range key_rules {
+// 				key_err := rule(fmt.Sprintf("%s.%s", field_name, key), key)
+// 				errors.AddErrors(key_err)
+// 			}
+// 		}
+// 		if len(errors) > 0 {
+// 			return errors
+// 		}
+// 		return nil
+// 	}
+// }
+//
+// func MapKeyValue[V any](key_rules []Rule[string], value_rules []Rule[V]) Rule[map[string]V] {
+// 	return func(field_name string, input map[string]V) ErrorMap {
+// 		errors := make(ErrorMap)
+// 		for key, value := range input {
+// 			for _, rule := range key_rules {
+// 				key_err := rule(fmt.Sprintf("%s.%s", field_name, key), key)
+// 				errors.AddErrors(key_err)
+// 			}
+// 			for _, rule := range value_rules {
+// 				value_err := rule(fmt.Sprintf("%s.%s", field_name, key), value)
+// 				errors.AddErrors(value_err)
+// 			}
+// 		}
+// 		if len(errors) > 0 {
+// 			return errors
+// 		}
+// 		return nil
+// 	}
+// }
+
 func CustomMessage[T any](message string, rule Rule[T]) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		err := rule(field_name, input)
@@ -140,30 +210,3 @@ func LenLte[T any](value int) Rule[[]T] {
 		return nil
 	}
 }
-
-func Each[T any](rules ...Rule[T]) Rule[[]T] {
-	return func(field_name string, input []T) ErrorMap {
-		errors := make(ErrorMap)
-		for i, element := range input {
-			for _, rule := range rules {
-				err := rule(fmt.Sprintf("%s[%d]", field_name, i), element)
-				errors.AddErrors(err)
-			}
-		}
-		if len(errors) > 0 {
-			return errors
-		}
-		return nil
-	}
-}
-
-// {
-//
-//     nicknames: [
-//         "len lt",
-//         {
-//
-//     }
-//
-//     ]
-// }

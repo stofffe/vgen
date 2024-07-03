@@ -7,6 +7,7 @@ type PersonVgen struct {
 	age       *int
 	nicknames *[]string
 	matrix    *[][]int
+	stats     *map[string]int
 }
 
 func (p PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
@@ -22,6 +23,8 @@ func (p PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
 	errors.AddErrors(rules.nicknames.Validate("nicknames", p.nicknames))
 	// matrix
 	errors.AddErrors(rules.matrix.Validate("matrix", p.matrix))
+	// stats
+	errors.AddErrors(rules.stats.Validate("matrix", p.stats))
 
 	return errors
 }
@@ -31,4 +34,5 @@ type PersonRules struct {
 	age       vgen.Rules[int]
 	nicknames vgen.Rules[[]string]
 	matrix    vgen.Rules[[][]int]
+	stats     vgen.Rules[map[string]int]
 }
