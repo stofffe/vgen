@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/stofffe/vgen/vgen"
+	"github.com/stofffe/vgen"
 )
 
 // vgen

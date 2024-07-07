@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"fmt"
@@ -78,7 +78,7 @@ func parseFile(path string) (ParseInfo, error) {
 		Package:     packageName,
 		StructTypes: structTypes,
 		Imports: []string{
-			"github.com/stofffe/vgen/vgen",
+			"github.com/stofffe/vgen",
 		},
 	}, nil
 }
