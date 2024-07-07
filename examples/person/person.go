@@ -6,6 +6,7 @@ import (
 	"github.com/stofffe/vgen/vgen"
 )
 
+// vgen
 type Person struct {
 	name      string
 	age       int
