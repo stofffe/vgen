@@ -19,15 +19,15 @@ func (e ErrorMap) AddErrors(errors ErrorMap) {
 	}
 }
 
+func (e ErrorMap) Debug() string {
+	b, _ := json.MarshalIndent(e, "", "  ")
+	return string(b)
+}
+
 func (e ErrorList) MarshalJSON() ([]byte, error) {
 	list := []string{}
 	for _, err := range e {
 		list = append(list, err.Error())
 	}
 	return json.Marshal(list)
-}
-
-func (e ErrorMap) Debug() string {
-	b, _ := json.MarshalIndent(e, "", "  ")
-	return string(b)
 }

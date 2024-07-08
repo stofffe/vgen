@@ -77,8 +77,8 @@ func MapValue[V any](value_rules ...Rule[V]) Rule[map[string]V] {
 	}
 }
 
-func MapHasKey[V any](key string) Rule[map[string]V] {
-	return func(field_name string, input map[string]V) ErrorMap {
+func MapHasKey[T map[string]V, V any](key string) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
 		if _, ok := input[key]; !ok {
 			return SingleError(field_name, fmt.Errorf("map must contain key %v", key))
 		}
@@ -151,40 +151,40 @@ func Lte[T cmp.Ordered](value T) Rule[T] {
 		return nil
 	}
 }
-func LenEq[T any](value int) Rule[[]T] {
-	return func(field_name string, input []T) ErrorMap {
+func LenEq[T []V, V any](value int) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
 		if !(len(input) == value) {
 			return SingleError(field_name, fmt.Errorf("len must be equal to %v", value))
 		}
 		return nil
 	}
 }
-func LenGt[T any](value int) Rule[[]T] {
-	return func(field_name string, input []T) ErrorMap {
+func LenGt[T []V, V any](value int) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
 		if !(len(input) > value) {
 			return SingleError(field_name, fmt.Errorf("len must be greater than %v", value))
 		}
 		return nil
 	}
 }
-func LenGte[T any](value int) Rule[[]T] {
-	return func(field_name string, input []T) ErrorMap {
+func LenGte[T []V, V any](value int) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
 		if !(len(input) >= value) {
 			return SingleError(field_name, fmt.Errorf("len must be greater than or equal to %v", value))
 		}
 		return nil
 	}
 }
-func LenLt[T any](value int) Rule[[]T] {
-	return func(field_name string, input []T) ErrorMap {
+func LenLt[T []V, V any](value int) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
 		if !(len(input) < value) {
 			return SingleError(field_name, fmt.Errorf("len must be less than %v", value))
 		}
 		return nil
 	}
 }
-func LenLte[T any](value int) Rule[[]T] {
-	return func(field_name string, input []T) ErrorMap {
+func LenLte[T []V, V any](value int) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
 		if !(len(input) <= value) {
 			return SingleError(field_name, fmt.Errorf("len must be less than or equal to %v", value))
 		}

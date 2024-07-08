@@ -9,20 +9,14 @@ import (
 type PersonVgen struct {
 	name *string
 	age *int
-	nicknames *[]string
-	stats *map[string]int
 }
 func (v PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.name.Validate("name", v.name))
 	errors.AddErrors(rules.age.Validate("age", v.age))
-	errors.AddErrors(rules.nicknames.Validate("nicknames", v.nicknames))
-	errors.AddErrors(rules.stats.Validate("stats", v.stats))
 	return errors
 }
 type PersonRules struct {
 	name vgen.Rules[string]
 	age vgen.Rules[int]
-	nicknames vgen.Rules[[]string]
-	stats vgen.Rules[map[string]int]
 }
