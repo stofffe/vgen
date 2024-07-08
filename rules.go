@@ -77,6 +77,15 @@ func MapValue[V any](value_rules ...Rule[V]) Rule[map[string]V] {
 	}
 }
 
+func MapHasKey[V any](key string) Rule[map[string]V] {
+	return func(field_name string, input map[string]V) ErrorMap {
+		if _, ok := input[key]; !ok {
+			return SingleError(field_name, fmt.Errorf("map does not contain key %v", key))
+		}
+		return nil
+	}
+}
+
 func CustomMessage[T any](message string, rule Rule[T]) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		err := rule(field_name, input)
