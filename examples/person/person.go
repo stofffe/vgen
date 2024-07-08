@@ -11,7 +11,6 @@ type Person struct {
 	name      string
 	age       int
 	nicknames []string
-	matrix    [][]int
 	stats     map[string]int
 }
 
@@ -26,11 +25,6 @@ func main() {
 			"notbob1",
 			"bob2",
 		},
-		// matrix: &[][]int{
-		// 	{1, 0, 0},
-		// 	{0, 1, 0},
-		// 	{0, 0, 1},
-		// },
 		stats: &stats,
 	}
 
