@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"regexp"
 	"strings"
 )
 
@@ -22,8 +23,10 @@ type StructType struct {
 }
 
 type StructField struct {
-	Name string
-	Type string
+	Name  string
+	Type  string
+	Tags  string
+	Alias string // json tag
 }
 
 func parseFile(path string) (ParseInfo, error) {
@@ -118,13 +121,24 @@ func parseStruct(structNode *ast.StructType, structName string) (StructType, err
 
 	for _, field := range structNode.Fields.List {
 		fieldName := field.Names[0].Name // TODO handle multiple
+		tags := ""
+		if field.Tag != nil {
+			tags = field.Tag.Value
+		}
+		alias := fieldName
+		if extraced, ok := extractJsonName(tags); ok {
+			alias = extraced
+		}
+
 		typ, err := parseFieldType(field.Type)
 		if err != nil {
 			return StructType{}, fmt.Errorf("could not parse field type: %v", err)
 		}
 		structType.Fields = append(structType.Fields, StructField{
-			Name: fieldName,
-			Type: typ,
+			Name:  fieldName,
+			Type:  typ,
+			Tags:  tags,
+			Alias: alias,
 		})
 	}
 
@@ -154,4 +168,14 @@ func parseFieldType(fieldNode ast.Expr) (string, error) {
 		return "map[string]" + fieldType, nil
 	}
 	return "", fmt.Errorf("unsupported field type")
+}
+
+func extractJsonName(tag string) (string, bool) {
+	reg := regexp.MustCompile(`json:"[^"]*"`)
+	match := reg.FindString(tag)
+	match = strings.TrimPrefix(match, `json:"`)
+	match = strings.TrimSuffix(match, `"`)
+	match = strings.Split(match, ",")[0]
+	ok := match != ""
+	return match, ok
 }

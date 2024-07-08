@@ -15,7 +15,7 @@
 {{ define "structType" }}
     type {{ .Name }}Vgen struct {
         {{- range .Fields }}
-            {{ .Name }} *{{ .Type }}
+            {{ .Name }} *{{ .Type }} {{ .Tags }}
         {{ end }}
     }
 {{ end }}
@@ -32,7 +32,7 @@
     func (v {{ .Name }}Vgen) Validate(rules {{ .Name }}Rules) vgen.ErrorMap {
         errors := make(vgen.ErrorMap)
         {{ range .Fields }}
-            errors.AddErrors(rules.{{ .Name }}.Validate("{{ .Name }}", v.{{ .Name }}))
+            errors.AddErrors(rules.{{ .Name }}.Validate("{{ .Alias }}", v.{{ .Name }}))
         {{ end }}
         return errors
     }
