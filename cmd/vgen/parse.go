@@ -63,7 +63,7 @@ func parseFile(path string) (ParseInfo, error) {
 		}
 
 		if node.Tok == token.IMPORT {
-			fmt.Println("imports", node)
+			// fmt.Println("imports", node)
 		}
 
 		return true

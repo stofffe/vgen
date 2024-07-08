@@ -12,7 +12,7 @@ import (
 //go:embed template.tmpl
 var templateStr string
 
-func GenerateFile(info ParseInfo) ([]byte, error) {
+func generateFile(info ParseInfo) ([]byte, error) {
 
 	var buffer bytes.Buffer
 
