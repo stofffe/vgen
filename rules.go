@@ -80,7 +80,7 @@ func MapValue[V any](value_rules ...Rule[V]) Rule[map[string]V] {
 func MapHasKey[V any](key string) Rule[map[string]V] {
 	return func(field_name string, input map[string]V) ErrorMap {
 		if _, ok := input[key]; !ok {
-			return SingleError(field_name, fmt.Errorf("map does not contain key %v", key))
+			return SingleError(field_name, fmt.Errorf("map must contain key %v", key))
 		}
 		return nil
 	}
@@ -101,7 +101,16 @@ func CustomMessage[T any](message string, rule Rule[T]) Rule[T] {
 func Eq[T comparable](value T) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		if input != value {
-			return SingleError(field_name, fmt.Errorf("not equal to %v", value))
+			return SingleError(field_name, fmt.Errorf("must be equal to %v", value))
+		}
+		return nil
+	}
+}
+
+func Neq[T comparable](value T) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
+		if input == value {
+			return SingleError(field_name, fmt.Errorf("must not be equal to %v", value))
 		}
 		return nil
 	}
@@ -110,7 +119,7 @@ func Eq[T comparable](value T) Rule[T] {
 func Gt[T cmp.Ordered](value T) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		if !(input > value) {
-			return SingleError(field_name, fmt.Errorf("not greater than %v", value))
+			return SingleError(field_name, fmt.Errorf("must be greater than %v", value))
 		}
 		return nil
 	}
@@ -119,7 +128,7 @@ func Gt[T cmp.Ordered](value T) Rule[T] {
 func Gte[T cmp.Ordered](value T) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		if !(input >= value) {
-			return SingleError(field_name, fmt.Errorf("not greater than or equal to %v", value))
+			return SingleError(field_name, fmt.Errorf("must be greater than or equal to %v", value))
 		}
 		return nil
 	}
@@ -128,7 +137,7 @@ func Gte[T cmp.Ordered](value T) Rule[T] {
 func Lt[T cmp.Ordered](value T) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		if !(input < value) {
-			return SingleError(field_name, fmt.Errorf("not less than %v", value))
+			return SingleError(field_name, fmt.Errorf("must be less than %v", value))
 		}
 		return nil
 	}
@@ -137,7 +146,7 @@ func Lt[T cmp.Ordered](value T) Rule[T] {
 func Lte[T cmp.Ordered](value T) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		if !(input <= value) {
-			return SingleError(field_name, fmt.Errorf("not less than or equal to %v", value))
+			return SingleError(field_name, fmt.Errorf("must be less than or equal to %v", value))
 		}
 		return nil
 	}
@@ -145,7 +154,7 @@ func Lte[T cmp.Ordered](value T) Rule[T] {
 func LenEq[T any](value int) Rule[[]T] {
 	return func(field_name string, input []T) ErrorMap {
 		if !(len(input) == value) {
-			return SingleError(field_name, fmt.Errorf("len not equal to %v", value))
+			return SingleError(field_name, fmt.Errorf("len must be equal to %v", value))
 		}
 		return nil
 	}
@@ -153,7 +162,7 @@ func LenEq[T any](value int) Rule[[]T] {
 func LenGt[T any](value int) Rule[[]T] {
 	return func(field_name string, input []T) ErrorMap {
 		if !(len(input) > value) {
-			return SingleError(field_name, fmt.Errorf("len not greater than %v", value))
+			return SingleError(field_name, fmt.Errorf("len must be greater than %v", value))
 		}
 		return nil
 	}
@@ -161,7 +170,7 @@ func LenGt[T any](value int) Rule[[]T] {
 func LenGte[T any](value int) Rule[[]T] {
 	return func(field_name string, input []T) ErrorMap {
 		if !(len(input) >= value) {
-			return SingleError(field_name, fmt.Errorf("len not greater than or equal to %v", value))
+			return SingleError(field_name, fmt.Errorf("len must be greater than or equal to %v", value))
 		}
 		return nil
 	}
@@ -169,7 +178,7 @@ func LenGte[T any](value int) Rule[[]T] {
 func LenLt[T any](value int) Rule[[]T] {
 	return func(field_name string, input []T) ErrorMap {
 		if !(len(input) < value) {
-			return SingleError(field_name, fmt.Errorf("len not less than %v", value))
+			return SingleError(field_name, fmt.Errorf("len must be less than %v", value))
 		}
 		return nil
 	}
@@ -177,7 +186,7 @@ func LenLt[T any](value int) Rule[[]T] {
 func LenLte[T any](value int) Rule[[]T] {
 	return func(field_name string, input []T) ErrorMap {
 		if !(len(input) <= value) {
-			return SingleError(field_name, fmt.Errorf("len not less than or equal to %v", value))
+			return SingleError(field_name, fmt.Errorf("len must be less than or equal to %v", value))
 		}
 		return nil
 	}
@@ -186,7 +195,7 @@ func LenLte[T any](value int) Rule[[]T] {
 func OneOf[T comparable](values ...T) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		if !slices.Contains(values, input) {
-			return SingleError(field_name, fmt.Errorf("not one of %v", values))
+			return SingleError(field_name, fmt.Errorf("must be one of %v", values))
 		}
 		return nil
 	}
@@ -195,7 +204,7 @@ func OneOf[T comparable](values ...T) Rule[T] {
 func NotOneOf[T comparable](values ...T) Rule[T] {
 	return func(field_name string, input T) ErrorMap {
 		if slices.Contains(values, input) {
-			return SingleError(field_name, fmt.Errorf("is one of %v", values))
+			return SingleError(field_name, fmt.Errorf("must not be one of %v", values))
 		}
 		return nil
 	}
