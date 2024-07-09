@@ -13,6 +13,14 @@ func SingleError(prefix string, err error) ErrorMap {
 	return errors
 }
 
+func (e ErrorMap) Prefix(prefix string) ErrorMap {
+	errors := make(ErrorMap)
+	for k, v := range e {
+		errors[prefix+k] = v
+	}
+	return errors
+}
+
 func (e ErrorMap) AddErrors(errors ErrorMap) {
 	for k, v := range errors {
 		e[k] = append(e[k], v...)

@@ -23,10 +23,11 @@ type StructType struct {
 }
 
 type StructField struct {
-	Name  string
-	Type  string
-	Tags  string
-	Alias string // json tag
+	Name   string
+	Type   string
+	Tags   string
+	Alias  string // json tag
+	Nested bool
 }
 
 func parseFile(path string) (ParseInfo, error) {
@@ -119,30 +120,91 @@ func parseStruct(structNode *ast.StructType, structName string) (StructType, err
 		Fields: []StructField{},
 	}
 
-	for _, field := range structNode.Fields.List {
-		fieldName := field.Names[0].Name // TODO handle multiple
-		tags := ""
-		if field.Tag != nil {
-			tags = field.Tag.Value
-		}
-		alias := fieldName
-		if extraced, ok := extractJsonName(tags); ok {
-			alias = extraced
-		}
-
-		typ, err := parseFieldType(field.Type)
+	for _, fieldNode := range structNode.Fields.List {
+		field, err := parseField(fieldNode)
 		if err != nil {
-			return StructType{}, fmt.Errorf("could not parse field type: %v", err)
+			return StructType{}, fmt.Errorf("could not parse field: %v", err)
 		}
-		structType.Fields = append(structType.Fields, StructField{
-			Name:  fieldName,
-			Type:  typ,
-			Tags:  tags,
-			Alias: alias,
-		})
+		structType.Fields = append(structType.Fields, field)
 	}
 
 	return structType, nil
+}
+
+func parseField(fieldNode *ast.Field) (StructField, error) {
+	comments := fieldNode.Doc.Text() + fieldNode.Comment.Text()
+
+	fieldName := fieldNode.Names[0].Name // TODO handle multiple
+	tags := ""
+	if fieldNode.Tag != nil {
+		tags = fieldNode.Tag.Value
+	}
+
+	commentTags, err := parseFieldTags(comments)
+	if err != nil {
+		return StructField{}, fmt.Errorf("could not parse field tags: %v", err)
+	}
+	nested := commentTags.include
+	alias := fieldName
+	if commentTags.name != "" {
+		alias = commentTags.name
+	}
+
+	typ, err := parseFieldType(fieldNode.Type)
+	if err != nil {
+		return StructField{}, fmt.Errorf("could not parse field type: %v", err)
+	}
+
+	return StructField{
+		Name:   fieldName,
+		Type:   typ,
+		Tags:   tags,
+		Alias:  alias,
+		Nested: nested,
+	}, nil
+}
+
+type FieldTags struct {
+	include bool
+	name    string
+}
+
+func parseFieldTags(comment string) (FieldTags, error) {
+	// default tags
+	tags := FieldTags{
+		name:    "",
+		include: false,
+	}
+
+	reg := regexp.MustCompile(`vgen\((?s).*\)`)
+	match := reg.FindString(comment)
+
+	if match == "" {
+		return tags, nil
+	}
+
+	match = strings.TrimPrefix(match, "vgen(")
+	match = strings.TrimSuffix(match, ")")
+	args := strings.Split(match, ",")
+
+	for _, arg := range args {
+		arg = strings.TrimSpace(arg)
+		split := strings.Split(arg, "=")
+		ident := split[0]
+		switch ident {
+		case "nested", "n":
+			tags.include = true
+		case "alias":
+			if len(split) < 2 || split[1] == "" {
+				return FieldTags{}, fmt.Errorf("name must have second argument")
+			}
+			name := split[1]
+			tags.name = name
+		default:
+			return FieldTags{}, fmt.Errorf("unknown tag %v", ident)
+		}
+	}
+	return tags, nil
 }
 
 func parseFieldType(fieldNode ast.Expr) (string, error) {

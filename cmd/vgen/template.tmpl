@@ -15,7 +15,11 @@
 {{ define "structType" }}
     type {{ .Name }}Vgen struct {
         {{- range .Fields }}
-            {{ .Name }} *{{ .Type }} {{ .Tags }}
+            {{ if .Nested }}
+                {{ .Name }} *{{ .Type }}Vgen {{ .Tags }}
+            {{ else }}
+                {{ .Name }} *{{ .Type }} {{ .Tags }}
+            {{ end }}
         {{ end }}
     }
 {{ end }}
@@ -23,7 +27,11 @@
 {{ define "ruleType" }}
     type {{ .Name }}Rules struct {
         {{- range .Fields }}
-            {{ .Name }} vgen.Rules[{{ .Type }}]
+            {{ if .Nested }}
+                {{ .Name }} {{ .Name }}Rules
+            {{ else }}
+                {{ .Name }} vgen.Rules[{{ .Type }}]
+            {{ end }}
         {{ end }}
     }
 {{ end }}
@@ -32,7 +40,11 @@
     func (v {{ .Name }}Vgen) Validate(rules {{ .Name }}Rules) vgen.ErrorMap {
         errors := make(vgen.ErrorMap)
         {{ range .Fields }}
-            errors.AddErrors(rules.{{ .Name }}.Validate("{{ .Alias }}", v.{{ .Name }}))
+            {{ if .Nested }} 
+	            errors.AddErrors(v.{{ .Name }}.Validate(rules.{{ .Name }}).Prefix("{{ .Alias }}.")) // TODO slow
+            {{ else }}
+                errors.AddErrors(rules.{{ .Name }}.Validate("{{ .Alias }}", v.{{ .Name }}))
+            {{ end }}
         {{ end }}
         return errors
     }
