@@ -10,12 +10,10 @@ import (
 
 // vgen(include)
 type Person struct {
-	Name string // vgen( alias=name )
-	// vgen(
-	//   nested,
-	//   alias=pet
-	// )
-	Pet Pet
+	Name  string   // vgen(alias=name)
+	Pet   Pet      // vgen(n, alias=pet)
+	Pets  []Pet    // vgen(n, alias=pets)
+	Names []string // vgen(alias=names)
 }
 
 // vgen
@@ -31,19 +29,34 @@ func main() {
 		Pet: &PetVgen{
 			Name: &petName,
 		},
+		Pets: &[]PetVgen{
+			{Name: &petName},
+			{Name: &petName},
+		},
+		Names: &[]string{},
 	}
 
-	rules := PersonRules{
+	petRules := PetRules{
+		Name: vgen.NewRules(true,
+			vgen.Eq("bobby"),
+		),
+	}
+
+	personRules := PersonRules{
 		Name: vgen.NewRules(true,
 			vgen.Eq("bob"),
 		),
-		Pet: PetRules{
-			Name: vgen.NewRules(true,
-				vgen.Eq("bobby"),
+		Pet: vgen.NewRules(true,
+			vgen.Nested(petRules),
+		),
+		Pets: vgen.NewRules(true,
+			vgen.LenGt[[]PetVgen](3),
+			vgen.List(
+				vgen.Nested(petRules),
 			),
-		},
+		),
 	}
 
-	err := person.Validate(rules)
+	err := person.Validate(personRules)
 	fmt.Println(err.Debug())
 }

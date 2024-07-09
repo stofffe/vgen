@@ -45,6 +45,16 @@ func (r Rules[T]) Validate(field_name string, value *T) ErrorMap {
 // Rule implementations
 //
 
+type NestedRule[T any] interface {
+	Validate(field_name string, input T) ErrorMap
+}
+
+func Nested[T any, R NestedRule[T]](rules R) Rule[T] {
+	return func(field_name string, input T) ErrorMap {
+		return rules.Validate(field_name, input)
+	}
+}
+
 func List[T any](rules ...Rule[T]) Rule[[]T] {
 	return func(field_name string, input []T) ErrorMap {
 		errors := make(ErrorMap)
