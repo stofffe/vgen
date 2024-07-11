@@ -16,7 +16,7 @@ type Person struct {
 	Names []string // vgen(alias=names)
 }
 
-// vgen
+// vgen(include)
 type Pet struct {
 	Name string // vgen(alias=name)
 }
@@ -31,7 +31,7 @@ func main() {
 		},
 		Pets: &[]PetVgen{
 			{Name: &petName},
-			{Name: &petName},
+			{},
 		},
 		Names: &[]string{},
 	}
@@ -47,7 +47,7 @@ func main() {
 			vgen.Eq("bob"),
 		),
 		Pet: vgen.NewRules(true,
-			vgen.Nested(petRules),
+			petRules,
 		),
 		Pets: vgen.NewRules(true,
 			vgen.LenGt[[]PetVgen](3),

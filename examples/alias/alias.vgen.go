@@ -12,8 +12,14 @@ type PersonVgen struct {
 }
 func (v PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
-	errors.AddErrors(rules.Name.Validate("name", v.Name))
-	errors.AddErrors(rules.Age.Validate("age", v.Age))
+	errors.AddErrors(rules.Name.Validate("Name", v.Name))
+	errors.AddErrors(rules.Age.Validate("Age", v.Age))
+	return errors
+}
+func (rules PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
+	errors := make(vgen.ErrorMap)
+	errors.AddErrors(rules.Name.Validate(prefix+".Name", input.Name))
+	errors.AddErrors(rules.Age.Validate(prefix+".Age", input.Age))
 	return errors
 }
 type PersonRules struct {

@@ -14,6 +14,11 @@ func (v CharacterVgen) Validate(rules CharacterRules) vgen.ErrorMap {
 	errors.AddErrors(rules.stats.Validate("stats", v.stats))
 	return errors
 }
+func (rules CharacterRules) Validate(prefix string, input CharacterVgen) vgen.ErrorMap {
+	errors := make(vgen.ErrorMap)
+	errors.AddErrors(rules.stats.Validate(prefix+".stats", input.stats))
+	return errors
+}
 type CharacterRules struct {
 	stats vgen.Rules[map[string]int]
 }
