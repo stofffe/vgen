@@ -10,16 +10,12 @@ import (
 
 // vgen
 type Pointer struct {
-	Name []*string `json:"name"`
-	Age  []int
-	Pet  *string
+	Name *string `json:"name"` // vgen(alias=name)
 }
 
 func main() {
 	js := `{
-        "name": [
-            "bob", "bobby", null
-        ]
+        "name": null
     }`
 
 	var pointer PointerVgen
@@ -30,17 +26,10 @@ func main() {
 	}
 
 	rules := PointerRules{
-		Age: vgen.NewRules(
-			vgen.Required[[]int](),
-		),
 		Name: vgen.NewRules(
-			vgen.Required[[]*string](),
-			vgen.List(
-				vgen.PointerNotNil[*string](),
-				vgen.Deref(
-					vgen.Eq("bob"),
-					vgen.Eq("aaa"),
-				),
+			vgen.Required[*string](),
+			vgen.Deref(
+				vgen.Eq("bobby"),
 			),
 		),
 	}

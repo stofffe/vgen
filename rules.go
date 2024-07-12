@@ -42,49 +42,6 @@ func (rule RuleFunc[T]) Validate(fieldName string, input *T) ErrorMap {
 	return rule(fieldName, input)
 }
 
-// List of rules along with required check
-// type Rules[T any] struct {
-// 	required bool
-// 	rules    []Rule[T]
-// }
-//
-// func NewRules[T any](required bool, rules ...Rule[T]) Rules[T] {
-// 	return Rules[T]{
-// 		required: required,
-// 		rules:    rules,
-// 	}
-// }
-// func RequiredRules[T any](rules ...Rule[T]) Rules[T] {
-// 	return Rules[T]{
-// 		required: true,
-// 		rules:    rules,
-// 	}
-// }
-// func OptionalRules[T any](rules ...Rule[T]) Rules[T] {
-// 	return Rules[T]{
-// 		required: false,
-// 		rules:    rules,
-// 	}
-// }
-//
-// func (r Rules[T]) Validate(fieldName string, value *T) ErrorMap {
-// 	errors := make(ErrorMap)
-// 	if value == nil {
-// 		if r.required {
-// 			errors.AddErrors(NewErrorMap(fieldName, fmt.Errorf("required")))
-// 		}
-// 		return errors
-// 	}
-// 	deref_value := *value
-//
-// 	for _, rule := range r.rules {
-// 		if err := rule.Validate(fieldName, deref_value); err != nil {
-// 			errors.AddErrors(err)
-// 		}
-// 	}
-// 	return errors
-// }
-
 //
 // Rule implementations
 //
@@ -94,15 +51,6 @@ func Required[T any]() RuleFunc[T] {
 		errors := EmptyErrorMap()
 		if input == nil {
 			errors.AddError(fieldName, fmt.Errorf("required"))
-		}
-		return errors
-	}
-}
-func PointerNotNil[T *I, I any]() RuleFunc[T] {
-	return func(fieldName string, input *T) ErrorMap {
-		errors := EmptyErrorMap()
-		if input == nil || *input == nil {
-			errors.AddError(fieldName, fmt.Errorf("must not be null"))
 		}
 		return errors
 	}
@@ -403,4 +351,56 @@ func NotOneOf[T comparable](values ...T) RuleFunc[T] {
 // 		}
 // 		return nil
 // 	}
+// }
+// func PointerNotNil[T *I, I any]() RuleFunc[T] {
+// 	return func(fieldName string, input *T) ErrorMap {
+// 		errors := EmptyErrorMap()
+// 		if input == nil || *input == nil {
+// 			errors.AddError(fieldName, fmt.Errorf("must not be null"))
+// 		}
+// 		return errors
+// 	}
+// }
+
+// List of rules along with required check
+// type Rules[T any] struct {
+// 	required bool
+// 	rules    []Rule[T]
+// }
+//
+// func NewRules[T any](required bool, rules ...Rule[T]) Rules[T] {
+// 	return Rules[T]{
+// 		required: required,
+// 		rules:    rules,
+// 	}
+// }
+// func RequiredRules[T any](rules ...Rule[T]) Rules[T] {
+// 	return Rules[T]{
+// 		required: true,
+// 		rules:    rules,
+// 	}
+// }
+// func OptionalRules[T any](rules ...Rule[T]) Rules[T] {
+// 	return Rules[T]{
+// 		required: false,
+// 		rules:    rules,
+// 	}
+// }
+//
+// func (r Rules[T]) Validate(fieldName string, value *T) ErrorMap {
+// 	errors := make(ErrorMap)
+// 	if value == nil {
+// 		if r.required {
+// 			errors.AddErrors(NewErrorMap(fieldName, fmt.Errorf("required")))
+// 		}
+// 		return errors
+// 	}
+// 	deref_value := *value
+//
+// 	for _, rule := range r.rules {
+// 		if err := rule.Validate(fieldName, deref_value); err != nil {
+// 			errors.AddErrors(err)
+// 		}
+// 	}
+// 	return errors
 // }

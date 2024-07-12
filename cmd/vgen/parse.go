@@ -23,15 +23,19 @@ type StructType struct {
 }
 
 type StructField struct {
-	Name   string
-	Types  []FieldType
-	Tags   string
-	Alias  string // json tag
-	Nested bool
+	Name    string
+	Types   []FieldType
+	Tags    string
+	Alias   string // json tag
+	Nested  bool
+	Pointer bool
 }
 
 func (s StructField) Type() string {
 	var builder strings.Builder
+	if s.Pointer {
+		builder.WriteByte('*')
+	}
 	for _, t := range s.Types {
 		builder.WriteString(t.Type())
 	}
@@ -158,20 +162,22 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		alias = commentTags.name
 	}
 
-	var fieldTypes []FieldType
-	err = parseFieldType(fieldNode.Type, &fieldTypes)
-	if err != nil {
-		return StructField{}, fmt.Errorf("could not parse field type: %v", err)
-	}
-	// fmt.Printf("fieldTypes: %v\n", fieldTypes)
-
-	return StructField{
+	structField := StructField{
 		Name:   fieldName,
-		Types:  fieldTypes,
 		Tags:   tags,
 		Alias:  alias,
 		Nested: nested,
-	}, nil
+
+		Types:   []FieldType{},
+		Pointer: false,
+	}
+
+	err = structField.parseFieldType(fieldNode.Type)
+	if err != nil {
+		return StructField{}, fmt.Errorf("could not parse field type: %v", err)
+	}
+
+	return structField, nil
 }
 
 type FieldTags struct {
@@ -229,33 +235,37 @@ func (f FieldTypeIdent) Type() string { return f.name }
 func (f FieldTypeArray) Type() string { return "[]" }
 func (f FieldTypeMap) Type() string   { return "map[string]" }
 
-func parseFieldType(fieldNode ast.Expr, fieldTypes *[]FieldType) error {
+func (f *StructField) parseFieldType(fieldNode ast.Expr) error {
 	switch node := fieldNode.(type) {
 	case *ast.Ident:
-		*fieldTypes = append(*fieldTypes, FieldTypeIdent{name: node.Name})
+		f.Types = append(f.Types, FieldTypeIdent{name: node.Name})
 		return nil
 	case *ast.ArrayType:
-		*fieldTypes = append(*fieldTypes, FieldTypeArray{})
-		err := parseFieldType(node.Elt, fieldTypes)
+		f.Types = append(f.Types, FieldTypeArray{})
+		err := f.parseFieldType(node.Elt)
 		if err != nil {
 			return err
 		}
 	case *ast.MapType:
-		*fieldTypes = append(*fieldTypes, FieldTypeMap{})
+		f.Types = append(f.Types, FieldTypeMap{})
 		key, ok := node.Key.(*ast.Ident)
 		if !ok || key.Name != "string" {
 			return fmt.Errorf("invalid map key %v, must be string", key)
 		}
 
-		err := parseFieldType(node.Value, fieldTypes)
+		err := f.parseFieldType(node.Value)
 		if err != nil {
 			return err
 		}
-	// case *ast.StarExpr:
-	// 	fieldType, err := parseFieldType(node.X)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
+	case *ast.StarExpr:
+		if len(f.Types) > 0 {
+			return fmt.Errorf("pointers not allowed as list or map element")
+		}
+		err := f.parseFieldType(node.X)
+		if err != nil {
+			return err
+		}
+		f.Pointer = true
 	default:
 		return fmt.Errorf("unsupported field type: %T", fieldNode)
 	}
