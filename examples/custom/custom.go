@@ -27,11 +27,11 @@ func Normalized() vgen.RuleFunc[[]float32] {
 }
 
 func main() {
-	vector := VectorVgen{
+	vector := CustomVgen{
 		vector: &[]float32{1, 0, 1},
 	}
 
-	rules := VectorRules{
+	rules := CustomRules{
 		vector: vgen.NewRules(
 			vgen.LenEq[[]float32](3),
 			Normalized(),
