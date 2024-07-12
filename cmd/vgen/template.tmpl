@@ -44,7 +44,7 @@
         {{ end }}
         return errors
     }
-    func (rules {{ .Name }}Rules) Validate(prefix string, input {{ .Name }}Vgen) vgen.ErrorMap {
+    func (rules {{ .Name }}Rules) Validate(prefix string, input *{{ .Name }}Vgen) vgen.ErrorMap {
         errors := make(vgen.ErrorMap)
         {{ range .Fields }}
             errors.AddErrors(rules.{{ .Name }}.Validate(prefix+".{{ .Alias }}", input.{{ .Name }}))

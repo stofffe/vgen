@@ -6,47 +6,39 @@ package main
 import (
 	"github.com/stofffe/vgen"
 )
-type PersonVgen struct {
-	Name *string
-	Pet *PetVgen
-	Pets *[]PetVgen
-	Names *[]string
+type TestVgen struct {
+	BestResult *ResultVgen
+	AllResults *[]ResultVgen
 }
-func (v PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
+func (v TestVgen) Validate(rules TestRules) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
-	errors.AddErrors(rules.Name.Validate("name", v.Name))
-	errors.AddErrors(rules.Pet.Validate("pet", v.Pet))
-	errors.AddErrors(rules.Pets.Validate("pets", v.Pets))
-	errors.AddErrors(rules.Names.Validate("names", v.Names))
+	errors.AddErrors(rules.BestResult.Validate("pet", v.BestResult))
+	errors.AddErrors(rules.AllResults.Validate("pets", v.AllResults))
 	return errors
 }
-func (rules PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
+func (rules TestRules) Validate(prefix string, input *TestVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
-	errors.AddErrors(rules.Name.Validate(prefix+".name", input.Name))
-	errors.AddErrors(rules.Pet.Validate(prefix+".pet", input.Pet))
-	errors.AddErrors(rules.Pets.Validate(prefix+".pets", input.Pets))
-	errors.AddErrors(rules.Names.Validate(prefix+".names", input.Names))
+	errors.AddErrors(rules.BestResult.Validate(prefix+".pet", input.BestResult))
+	errors.AddErrors(rules.AllResults.Validate(prefix+".pets", input.AllResults))
 	return errors
 }
-type PersonRules struct {
-	Name vgen.Rules[string]
-	Pet vgen.Rules[PetVgen]
-	Pets vgen.Rules[[]PetVgen]
-	Names vgen.Rules[[]string]
+type TestRules struct {
+	BestResult vgen.Rules[ResultVgen]
+	AllResults vgen.Rules[[]ResultVgen]
 }
-type PetVgen struct {
-	Name *string
+type ResultVgen struct {
+	Score *string
 }
-func (v PetVgen) Validate(rules PetRules) vgen.ErrorMap {
+func (v ResultVgen) Validate(rules ResultRules) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
-	errors.AddErrors(rules.Name.Validate("name", v.Name))
+	errors.AddErrors(rules.Score.Validate("name", v.Score))
 	return errors
 }
-func (rules PetRules) Validate(prefix string, input PetVgen) vgen.ErrorMap {
+func (rules ResultRules) Validate(prefix string, input *ResultVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
-	errors.AddErrors(rules.Name.Validate(prefix+".name", input.Name))
+	errors.AddErrors(rules.Score.Validate(prefix+".name", input.Score))
 	return errors
 }
-type PetRules struct {
-	Name vgen.Rules[string]
+type ResultRules struct {
+	Score vgen.Rules[string]
 }

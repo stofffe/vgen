@@ -228,8 +228,14 @@ func parseFieldType(fieldNode ast.Expr) (string, error) {
 			return "", err
 		}
 		return "map[string]" + fieldType, nil
+	case *ast.StarExpr:
+		fieldType, err := parseFieldType(node.X)
+		if err != nil {
+			return "", err
+		}
+		return "*" + fieldType, nil
 	}
-	return "", fmt.Errorf("unsupported field type")
+	return "", fmt.Errorf("unsupported field type: %T", fieldNode)
 }
 
 func extractJsonName(tag string) (string, bool) {

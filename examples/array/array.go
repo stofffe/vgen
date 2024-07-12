@@ -23,14 +23,14 @@ func main() {
 	}
 
 	rules := ArrayRules{
-		vector: vgen.NewRules(true,
+		vector: vgen.NewRules(
 			vgen.LenEq[[]int](3),
 			vgen.List(
 				vgen.Gt(0),
 				vgen.Lte(10),
 			),
 		),
-		matrix: vgen.NewRules(true,
+		matrix: vgen.NewRules(
 			vgen.LenEq[[][]int](3),
 			vgen.List(
 				vgen.LenEq[[]int](3),

@@ -6,19 +6,19 @@ package main
 import (
 	"github.com/stofffe/vgen"
 )
-type VectorVgen struct {
+type CustomVgen struct {
 	vector *[]float32
 }
-func (v VectorVgen) Validate(rules VectorRules) vgen.ErrorMap {
+func (v CustomVgen) Validate(rules CustomRules) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.vector.Validate("vector", v.vector))
 	return errors
 }
-func (rules VectorRules) Validate(prefix string, input VectorVgen) vgen.ErrorMap {
+func (rules CustomRules) Validate(prefix string, input *CustomVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
 	return errors
 }
-type VectorRules struct {
+type CustomRules struct {
 	vector vgen.Rules[[]float32]
 }

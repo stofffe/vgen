@@ -20,7 +20,7 @@ func main() {
 	}
 
 	rules := CharacterRules{
-		stats: vgen.NewRules(true,
+		stats: vgen.NewRules(
 			vgen.MapHasKey[map[string]int]("speed"),
 			vgen.MapHasKey[map[string]int]("strength"),
 			vgen.MapHasKey[map[string]int]("intelligence"),

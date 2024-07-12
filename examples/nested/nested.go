@@ -9,54 +9,60 @@ import (
 // If json tag exists that name will be used as alias
 
 // vgen(include)
-type Person struct {
-	Name  string   // vgen(alias=name)
-	Pet   Pet      // vgen(n, alias=pet)
-	Pets  []Pet    // vgen(n, alias=pets)
-	Names []string // vgen(alias=names)
+type Test struct {
+	BestResult Result   // vgen(n, alias=pet)
+	AllResults []Result // vgen(n, alias=pets)
 }
 
 // vgen(include)
-type Pet struct {
-	Name string // vgen(alias=name)
+type Result struct {
+	Score string // vgen(alias=name)
 }
 
+var (
+	A = "A"
+	B = "B"
+	C = "C"
+	D = "D"
+	E = "E"
+	F = "F"
+
+	X = "X"
+)
+
 func main() {
-	name := "bo"
-	petName := "boby"
-	person := PersonVgen{
-		Name: &name,
-		Pet: &PetVgen{
-			Name: &petName,
+	test := TestVgen{
+		BestResult: &ResultVgen{
+			Score: &X,
 		},
-		Pets: &[]PetVgen{
-			{Name: &petName},
+		AllResults: &[]ResultVgen{
+			{Score: &B},
+			{Score: &D},
+			{Score: &X},
+			{Score: &A},
 			{},
+			{Score: &C},
 		},
-		Names: &[]string{},
 	}
 
-	petRules := PetRules{
-		Name: vgen.NewRules(true,
-			vgen.Eq("bobby"),
+	resultRules := ResultRules{
+		Score: vgen.NewRules(
+			vgen.Required[string](),
+			vgen.OneOf(A, B, C, D, E),
 		),
 	}
 
-	personRules := PersonRules{
-		Name: vgen.NewRules(true,
-			vgen.Eq("bob"),
+	testRules := TestRules{
+		BestResult: vgen.NewRules(
+			vgen.Nested(resultRules),
 		),
-		Pet: vgen.NewRules(true,
-			petRules,
-		),
-		Pets: vgen.NewRules(true,
-			vgen.LenGt[[]PetVgen](3),
+		AllResults: vgen.NewRules(
 			vgen.List(
-				vgen.Nested(petRules),
+				vgen.Nested(resultRules),
 			),
 		),
 	}
 
-	err := person.Validate(personRules)
+	err := test.Validate(testRules)
 	fmt.Println(err.Debug())
 }

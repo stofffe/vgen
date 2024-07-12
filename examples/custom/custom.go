@@ -7,16 +7,16 @@ import (
 )
 
 // vgen
-type Vector struct {
+type Custom struct {
 	vector []float32
 }
 
 // Custom rule
 // Components must sum to 1
 func Normalized() vgen.RuleFunc[[]float32] {
-	return func(field_name string, input []float32) vgen.ErrorMap {
+	return func(field_name string, input *[]float32) vgen.ErrorMap {
 		var sum float32
-		for _, v := range input {
+		for _, v := range *input {
 			sum += v
 		}
 		if sum != 1.0 {
@@ -27,17 +27,12 @@ func Normalized() vgen.RuleFunc[[]float32] {
 }
 
 func main() {
-
 	vector := VectorVgen{
 		vector: &[]float32{1, 0, 1},
 	}
 
 	rules := VectorRules{
-		// vector: vgen.NewRules(true,
-		// 	vgen.LenEq[[]float32](3),
-		// 	Normalized(),
-		// ),
-		vector: vgen.RequiredRules(
+		vector: vgen.NewRules(
 			vgen.LenEq[[]float32](3),
 			Normalized(),
 		),
