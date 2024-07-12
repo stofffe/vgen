@@ -22,3 +22,10 @@ func (rules CharacterRules) Validate(prefix string, input *CharacterVgen) vgen.E
 type CharacterRules struct {
 	stats vgen.Rules[map[string]int]
 }
+func (v CharacterVgen) Convert() Character {
+	var res Character
+	if v.stats != nil {
+		res.stats = *v.stats
+	}
+	return res
+}

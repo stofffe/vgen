@@ -36,7 +36,7 @@
     }
 {{ end }}
 
-{{ define "structValidation" }}
+{{ define "validation" }}
     func (v {{ .Name }}Vgen) Validate(rules {{ .Name }}Rules) vgen.ErrorMap {
         errors := make(vgen.ErrorMap)
         {{ range .Fields }}
@@ -50,5 +50,37 @@
             errors.AddErrors(rules.{{ .Name }}.Validate(prefix+".{{ .Alias }}", input.{{ .Name }}))
         {{ end }}
         return errors
+    }
+{{ end }}
+
+{{ define "convert"}}
+    func (v {{ .Name }}Vgen) Convert() {{ .Name }} {
+        var res {{ .Name }}
+        {{ range .Fields }}
+            {{ $name := .Name }}
+            {{ $types := .Types }}
+            {{ $iters := len .Types }}
+            {{ $itersExc := sub $iters 1 }}
+            if v.{{ $name }} != nil {
+                {{ if not .Nested }}
+                    res.{{ $name }} = *v.{{ $name }}
+                {{ else if eq $iters 1 }}
+                    res.{{ $name }} = v.{{ $name }}.Convert()
+                {{ else }}
+                    elem := *v.{{ $name }}
+                    {{ range $i := iter $itersExc }}
+                        res.{{ $name }}{{ range $j := iter $i }}[i{{ $j }}]{{ end }} = make({{ range $j := iterRange $i $iters }}{{ (index $types $j).Type }}{{ end }}, len(elem))
+                        for i{{ $i }}, elem := range elem {
+                    {{ end }}
+
+                    res.{{ $name }}{{ range $i := iter $itersExc }}[i{{ $i }}]{{ end }} = elem.Convert()
+
+                    {{ range $i := iter $itersExc }}
+                        }
+                    {{ end }}
+                {{ end }}
+            }
+        {{ end }}
+        return res
     }
 {{ end }}

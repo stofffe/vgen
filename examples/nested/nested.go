@@ -10,8 +10,12 @@ import (
 
 // vgen(include)
 type Test struct {
-	BestResult Result   // vgen(n, alias=pet)
-	AllResults []Result // vgen(n, alias=pets)
+	BestResult  Result                // vgen(n, alias=pet)
+	AllResults  []Result              // vgen(n, alias=pets)
+	All2Results [][]Result            // vgen(n)
+	All3Results [][][]Result          // vgen(n)
+	MapResults  []map[string]Result   // vgen(n)
+	Map2Results []map[string][]Result // vgen(n)
 }
 
 // vgen(include)
@@ -31,9 +35,19 @@ var (
 )
 
 func main() {
+	ma1 := make(map[string]ResultVgen)
+	ma1["bobC"] = ResultVgen{Score: &C}
+	ma1["bobA"] = ResultVgen{Score: &A}
+	ma2 := make(map[string]ResultVgen)
+	ma2["aaa"] = ResultVgen{Score: &A}
+	ma3 := make(map[string][]ResultVgen)
+	ma3["ooo"] = []ResultVgen{
+		{Score: &C},
+		{Score: &B},
+	}
 	test := TestVgen{
 		BestResult: &ResultVgen{
-			Score: &X,
+			Score: &A,
 		},
 		AllResults: &[]ResultVgen{
 			{Score: &B},
@@ -43,7 +57,28 @@ func main() {
 			{},
 			{Score: &C},
 		},
+		All2Results: &[][]ResultVgen{
+			{
+				{Score: &B},
+				{Score: &B},
+				{Score: &B},
+			},
+			{
+				{Score: &A},
+				{Score: &A},
+				{Score: &A},
+			},
+		},
+		MapResults: &[]map[string]ResultVgen{
+			ma1, ma2,
+		},
+		Map2Results: &[]map[string][]ResultVgen{
+			ma3,
+		},
 	}
+
+	converted := test.Convert()
+	fmt.Println(converted)
 
 	resultRules := ResultRules{
 		Score: vgen.NewRules(

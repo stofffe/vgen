@@ -140,7 +140,6 @@ func List[T any](rules ...Rule[T]) RuleFunc[[]T] {
 			return errors
 		}
 		for i, element := range *input {
-			fmt.Println("ELEMENT", element)
 			for _, rule := range rules {
 				errors.AddErrors(rule.Validate(fmt.Sprintf("%s[%d]", fieldName, i), &element))
 			}

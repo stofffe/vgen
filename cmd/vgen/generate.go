@@ -16,7 +16,28 @@ func generateFile(info ParseInfo) ([]byte, error) {
 
 	var buffer bytes.Buffer
 
-	tmpl, err := template.New("template").Parse(templateStr)
+	tmpl, err := template.New("template").Funcs(template.FuncMap{
+		"iter": func(count int) []int {
+			var Items []int
+			for i := range count {
+				Items = append(Items, i)
+			}
+			return Items
+		},
+		"iterRange": func(start, end int) []int {
+			var Items []int
+			for i := start; i < end; i++ {
+				Items = append(Items, i)
+			}
+			return Items
+		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+	}).Parse(templateStr)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse template: %v", err)
 	}
@@ -34,10 +55,10 @@ func generateFile(info ParseInfo) ([]byte, error) {
 			return nil, fmt.Errorf("could not execute template structType: %v", err)
 		}
 
-		// struct validation
-		err = tmpl.ExecuteTemplate(&buffer, "structValidation", structType)
+		// validation
+		err = tmpl.ExecuteTemplate(&buffer, "validation", structType)
 		if err != nil {
-			return nil, fmt.Errorf("could not execute template structValidation: %v", err)
+			return nil, fmt.Errorf("could not execute template validation: %v", err)
 		}
 
 		// rule type
@@ -45,6 +66,13 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not execute template ruleType: %v", err)
 		}
+
+		// convert
+		err = tmpl.ExecuteTemplate(&buffer, "convert", structType)
+		if err != nil {
+			return nil, fmt.Errorf("could not execute template convert: %v", err)
+		}
+
 	}
 
 	bytes := buffer.Bytes()

@@ -26,3 +26,13 @@ type ArrayRules struct {
 	vector vgen.Rules[[]int]
 	matrix vgen.Rules[[][]int]
 }
+func (v ArrayVgen) Convert() Array {
+	var res Array
+	if v.vector != nil {
+		res.vector = *v.vector
+	}
+	if v.matrix != nil {
+		res.matrix = *v.matrix
+	}
+	return res
+}

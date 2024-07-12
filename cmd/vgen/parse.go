@@ -24,10 +24,18 @@ type StructType struct {
 
 type StructField struct {
 	Name   string
-	Type   string
+	Types  []FieldType
 	Tags   string
 	Alias  string // json tag
 	Nested bool
+}
+
+func (s StructField) Type() string {
+	var builder strings.Builder
+	for _, t := range s.Types {
+		builder.WriteString(t.Type())
+	}
+	return builder.String()
 }
 
 func parseFile(path string) (ParseInfo, error) {
@@ -150,14 +158,16 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		alias = commentTags.name
 	}
 
-	typ, err := parseFieldType(fieldNode.Type)
+	var fieldTypes []FieldType
+	err = parseFieldType(fieldNode.Type, &fieldTypes)
 	if err != nil {
 		return StructField{}, fmt.Errorf("could not parse field type: %v", err)
 	}
+	// fmt.Printf("fieldTypes: %v\n", fieldTypes)
 
 	return StructField{
 		Name:   fieldName,
-		Type:   typ,
+		Types:  fieldTypes,
 		Tags:   tags,
 		Alias:  alias,
 		Nested: nested,
@@ -207,43 +217,57 @@ func parseFieldTags(comment string) (FieldTags, error) {
 	return tags, nil
 }
 
-func parseFieldType(fieldNode ast.Expr) (string, error) {
+type FieldType interface {
+	Type() string
+}
+
+type FieldTypeIdent struct{ name string }
+type FieldTypeArray struct{}
+type FieldTypeMap struct{}
+
+func (f FieldTypeIdent) Type() string { return f.name }
+func (f FieldTypeArray) Type() string { return "[]" }
+func (f FieldTypeMap) Type() string   { return "map[string]" }
+
+func parseFieldType(fieldNode ast.Expr, fieldTypes *[]FieldType) error {
 	switch node := fieldNode.(type) {
 	case *ast.Ident:
-		return node.Name, nil
+		*fieldTypes = append(*fieldTypes, FieldTypeIdent{name: node.Name})
+		return nil
 	case *ast.ArrayType:
-		fieldType, err := parseFieldType(node.Elt)
+		*fieldTypes = append(*fieldTypes, FieldTypeArray{})
+		err := parseFieldType(node.Elt, fieldTypes)
 		if err != nil {
-			return "", err
+			return err
 		}
-		return "[]" + fieldType, nil
 	case *ast.MapType:
+		*fieldTypes = append(*fieldTypes, FieldTypeMap{})
 		key, ok := node.Key.(*ast.Ident)
 		if !ok || key.Name != "string" {
-			return "", fmt.Errorf("invalid map key %v, must be string", key)
+			return fmt.Errorf("invalid map key %v, must be string", key)
 		}
 
-		fieldType, err := parseFieldType(node.Value)
+		err := parseFieldType(node.Value, fieldTypes)
 		if err != nil {
-			return "", err
+			return err
 		}
-		return "map[string]" + fieldType, nil
-	case *ast.StarExpr:
-		fieldType, err := parseFieldType(node.X)
-		if err != nil {
-			return "", err
-		}
-		return "*" + fieldType, nil
+	// case *ast.StarExpr:
+	// 	fieldType, err := parseFieldType(node.X)
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	default:
+		return fmt.Errorf("unsupported field type: %T", fieldNode)
 	}
-	return "", fmt.Errorf("unsupported field type: %T", fieldNode)
+	return nil
 }
 
-func extractJsonName(tag string) (string, bool) {
-	reg := regexp.MustCompile(`json:"[^"]*"`)
-	match := reg.FindString(tag)
-	match = strings.TrimPrefix(match, `json:"`)
-	match = strings.TrimSuffix(match, `"`)
-	match = strings.Split(match, ",")[0]
-	ok := match != ""
-	return match, ok
-}
+// func extractJsonName(tag string) (string, bool) {
+// 	reg := regexp.MustCompile(`json:"[^"]*"`)
+// 	match := reg.FindString(tag)
+// 	match = strings.TrimPrefix(match, `json:"`)
+// 	match = strings.TrimSuffix(match, `"`)
+// 	match = strings.Split(match, ",")[0]
+// 	ok := match != ""
+// 	return match, ok
+// }

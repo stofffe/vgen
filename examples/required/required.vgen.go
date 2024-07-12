@@ -30,3 +30,16 @@ type PersonRules struct {
 	nickname vgen.Rules[string]
 	age vgen.Rules[int]
 }
+func (v PersonVgen) Convert() Person {
+	var res Person
+	if v.name != nil {
+		res.name = *v.name
+	}
+	if v.nickname != nil {
+		res.nickname = *v.nickname
+	}
+	if v.age != nil {
+		res.age = *v.age
+	}
+	return res
+}

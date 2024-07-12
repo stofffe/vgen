@@ -22,3 +22,10 @@ func (rules CustomRules) Validate(prefix string, input *CustomVgen) vgen.ErrorMa
 type CustomRules struct {
 	vector vgen.Rules[[]float32]
 }
+func (v CustomVgen) Convert() Custom {
+	var res Custom
+	if v.vector != nil {
+		res.vector = *v.vector
+	}
+	return res
+}
