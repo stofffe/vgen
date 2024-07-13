@@ -162,22 +162,30 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		alias = commentTags.name
 	}
 
-	structField := StructField{
+	fieldTypeInfo := FieldTypeInfo{
+		Types:     []FieldType{},
+		Pointer:   false,
+		Primitive: false,
+	}
+	err = fieldTypeInfo.parseFieldType(fieldNode.Type)
+	if err != nil {
+		return StructField{}, fmt.Errorf("could not parse field type: %v", err)
+	}
+
+	// Dont allow nested on primitve types
+	if nested && fieldTypeInfo.Primitive {
+		return StructField{}, fmt.Errorf("nested not allowed on primitve inner type")
+	}
+
+	return StructField{
 		Name:   fieldName,
 		Tags:   tags,
 		Alias:  alias,
 		Nested: nested,
 
-		Types:   []FieldType{},
-		Pointer: false,
-	}
-
-	err = structField.parseFieldType(fieldNode.Type)
-	if err != nil {
-		return StructField{}, fmt.Errorf("could not parse field type: %v", err)
-	}
-
-	return structField, nil
+		Types:   fieldTypeInfo.Types,
+		Pointer: fieldTypeInfo.Pointer,
+	}, nil
 }
 
 type FieldTags struct {
@@ -235,9 +243,18 @@ func (f FieldTypeIdent) Type() string { return f.name }
 func (f FieldTypeArray) Type() string { return "[]" }
 func (f FieldTypeMap) Type() string   { return "map[string]" }
 
-func (f *StructField) parseFieldType(fieldNode ast.Expr) error {
+type FieldTypeInfo struct {
+	Types     []FieldType
+	Pointer   bool
+	Primitive bool
+}
+
+func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 	switch node := fieldNode.(type) {
 	case *ast.Ident:
+		if node.Obj == nil {
+			f.Primitive = true
+		}
 		f.Types = append(f.Types, FieldTypeIdent{name: node.Name})
 		return nil
 	case *ast.ArrayType:
