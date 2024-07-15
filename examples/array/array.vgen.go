@@ -11,13 +11,13 @@ type ArrayVgen struct {
 	matrix *[][]int
 }
 func (v ArrayVgen) Validate(rules ArrayRules) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.vector.Validate("vector", v.vector))
 	errors.AddErrors(rules.matrix.Validate("matrix", v.matrix))
 	return errors
 }
 func (rules ArrayRules) Validate(prefix string, input ArrayVgen) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
 	errors.AddErrors(rules.matrix.Validate(prefix+".matrix", input.matrix))
 	return errors

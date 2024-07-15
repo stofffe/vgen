@@ -20,22 +20,17 @@ type Rules[T any] struct {
 	Rules    []Rule[T]
 }
 
-//
-// type Rules[T any] []Rule[T]
-//
-
 func (r Rules[T]) Validate(fieldName string, input *T) ErrorMap {
-	errors := EmptyErrorMap()
+	var errors ErrorMap
 
-	// required
 	if input == nil {
 		if r.Required {
 			errors.AddError(fieldName, fmt.Errorf("required"))
 		}
 		return errors
 	}
-	value := *input
 
+	value := *input
 	for _, rule := range r.Rules {
 		errors.AddErrors(rule.Validate(fieldName, value))
 	}
@@ -56,13 +51,6 @@ func RulesRequired[T any](rules ...Rule[T]) Rules[T] {
 	}
 }
 
-// func RulesDefault[T any](defaultValue T, rules ...Rule[T]) Rules[T] {
-// 	return Rules[T]{
-// 		Required: false,
-// 		Rules:    rules,
-// 	}
-// }
-
 // Implements Rule interface
 type RuleFunc[T any] func(fieldName string, input T) ErrorMap
 
@@ -75,9 +63,11 @@ func (rule RuleFunc[T]) Validate(fieldName string, input T) ErrorMap {
 //
 
 // Validate rules to for internal value of pointer
+
+// Validation rules for inner type of pointer
 func Deref[T any](rules ...Rule[T]) RuleFunc[*T] {
 	return func(fieldName string, input *T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if input == nil {
 			return errors
 		}
@@ -88,66 +78,38 @@ func Deref[T any](rules ...Rule[T]) RuleFunc[*T] {
 	}
 }
 
+// Validate nested Vgen struct
 func Nested[T any, R Rule[T]](rules R) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		errors.AddErrors(rules.Validate(fieldName, input))
 		return errors
 	}
 }
 
-func List[T any](rules ...Rule[T]) RuleFunc[[]T] {
-	return func(fieldName string, input []T) ErrorMap {
-		errors := EmptyErrorMap()
-		for i, element := range input {
-			for _, rule := range rules {
-				errors.AddErrors(rule.Validate(fmt.Sprintf("%s[%d]", fieldName, i), element))
-			}
-		}
-		return errors
-	}
-}
-
-func MapValue[V any](value_rules ...Rule[V]) RuleFunc[map[string]V] {
-	return func(fieldName string, input map[string]V) ErrorMap {
-		errors := EmptyErrorMap()
-		for key, value := range input {
-			for _, rule := range value_rules {
-				errors.AddErrors(rule.Validate(fmt.Sprintf("%s.%s", fieldName, key), value))
-			}
-		}
-		return errors
-	}
-}
-
-func MapHasKey[T map[string]V, V any](key string) RuleFunc[T] {
-	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
-		if _, ok := (input)[key]; !ok {
-			errors.AddError(fieldName, fmt.Errorf("map must contain key %v", key))
-		}
-		return errors
-	}
-}
-
+// Prefixes the error
 func PrefixMessage[T any](prefix string, rule Rule[T]) RuleFunc[T] { // TODO change rulefunc
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
-
 		innerErrors := rule.Validate(fieldName, input)
 
+		if innerErrors == nil {
+			return nil
+		}
+
+		var errors ErrorMap
 		for key, errs := range innerErrors {
 			for _, err := range errs {
-				errors[key] = append(errors[key], fmt.Errorf("%s%s", prefix, err.Error()))
+				errors.AddError(key, fmt.Errorf("%s%s", prefix, err.Error()))
 			}
 		}
 		return innerErrors
 	}
 }
 
+// Replaces any errors with a custom message
 func CustomMessage[T any](message string, rule Rule[T]) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		innerErrors := rule.Validate(fieldName, input)
 
 		if innerErrors != nil {
@@ -158,9 +120,47 @@ func CustomMessage[T any](message string, rule Rule[T]) RuleFunc[T] {
 	}
 }
 
+// Validates each element of list
+func List[T any](rules ...Rule[T]) RuleFunc[[]T] {
+	return func(fieldName string, input []T) ErrorMap {
+		var errors ErrorMap
+		for i, element := range input {
+			for _, rule := range rules {
+				errors.AddErrors(rule.Validate(fmt.Sprintf("%s[%d]", fieldName, i), element))
+			}
+		}
+		return errors
+	}
+}
+
+// Validates each value element of map
+func MapValue[V any](value_rules ...Rule[V]) RuleFunc[map[string]V] {
+	return func(fieldName string, input map[string]V) ErrorMap {
+		var errors ErrorMap
+		for key, value := range input {
+			for _, rule := range value_rules {
+				errors.AddErrors(rule.Validate(fmt.Sprintf("%s.%s", fieldName, key), value))
+			}
+		}
+		return errors
+	}
+}
+
+// Checks if map includes specific key
+func MapHasKey[T map[string]V, V any](key string) RuleFunc[T] {
+	return func(fieldName string, input T) ErrorMap {
+		var errors ErrorMap
+		if _, ok := (input)[key]; !ok {
+			errors.AddError(fieldName, fmt.Errorf("map must contain key %v", key))
+		}
+		return errors
+	}
+}
+
+// Equals
 func Eq[T comparable](value T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if input != value {
 			errors.AddError(fieldName, fmt.Errorf("must be equal to %v", value))
 		}
@@ -168,9 +168,10 @@ func Eq[T comparable](value T) RuleFunc[T] {
 	}
 }
 
+// Not equals
 func Neq[T comparable](value T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if input == value {
 			errors.AddError(fieldName, fmt.Errorf("must not be equal to %v", value))
 		}
@@ -178,9 +179,10 @@ func Neq[T comparable](value T) RuleFunc[T] {
 	}
 }
 
+// Greater than
 func Gt[T cmp.Ordered](value T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(input > value) {
 			errors.AddError(fieldName, fmt.Errorf("must be greater than %v", value))
 		}
@@ -188,9 +190,10 @@ func Gt[T cmp.Ordered](value T) RuleFunc[T] {
 	}
 }
 
+// Greater than or equal to
 func Gte[T cmp.Ordered](value T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(input >= value) {
 			errors.AddError(fieldName, fmt.Errorf("must be greater than or equal to %v", value))
 		}
@@ -198,9 +201,10 @@ func Gte[T cmp.Ordered](value T) RuleFunc[T] {
 	}
 }
 
+// Less than
 func Lt[T cmp.Ordered](value T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(input < value) {
 			errors.AddError(fieldName, fmt.Errorf("must be less than %v", value))
 		}
@@ -208,54 +212,65 @@ func Lt[T cmp.Ordered](value T) RuleFunc[T] {
 	}
 }
 
+// Less than or equal to
 func Lte[T cmp.Ordered](value T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(input <= value) {
 			errors.AddError(fieldName, fmt.Errorf("must be less than or equal to %v", value))
 		}
 		return errors
 	}
 }
+
+// Len Equals
 func LenEq[T []V, V any](value int) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(len(input) == value) {
 			errors.AddError(fieldName, fmt.Errorf("len must be equal to %v", value))
 		}
 		return errors
 	}
 }
+
+// Len greater than
 func LenGt[T []V, V any](value int) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(len(input) > value) {
 			errors.AddError(fieldName, fmt.Errorf("len must be greater than %v", value))
 		}
 		return errors
 	}
 }
+
+// Len greater than or equal to
 func LenGte[T []V, V any](value int) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(len(input) >= value) {
 			errors.AddError(fieldName, fmt.Errorf("len must be greater than or equal to %v", value))
 		}
 		return errors
 	}
 }
+
+// Len less than
 func LenLt[T []V, V any](value int) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(len(input) < value) {
 			errors.AddError(fieldName, fmt.Errorf("len must be less than %v", value))
 		}
 		return errors
 	}
 }
+
+// Len less than or equal to
 func LenLte[T []V, V any](value int) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !(len(input) <= value) {
 			errors.AddError(fieldName, fmt.Errorf("len must be less than or equal to %v", value))
 		}
@@ -263,9 +278,10 @@ func LenLte[T []V, V any](value int) RuleFunc[T] {
 	}
 }
 
+// One of the values
 func OneOf[T comparable](values ...T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if !slices.Contains(values, input) {
 			errors.AddError(fieldName, fmt.Errorf("must be one of %v", values))
 		}
@@ -273,9 +289,10 @@ func OneOf[T comparable](values ...T) RuleFunc[T] {
 	}
 }
 
+// Not one of the values
 func NotOneOf[T comparable](values ...T) RuleFunc[T] {
 	return func(fieldName string, input T) ErrorMap {
-		errors := EmptyErrorMap()
+		var errors ErrorMap
 		if slices.Contains(values, input) {
 			errors.AddError(fieldName, fmt.Errorf("must not be one of %v", values))
 		}
@@ -321,53 +338,10 @@ func NotOneOf[T comparable](values ...T) RuleFunc[T] {
 // }
 // func PointerNotNil[T *I, I any]() RuleFunc[T] {
 // 	return func(fieldName string, input *T) ErrorMap {
-// 		errors := EmptyErrorMap()
+// 		var errors ErrorMap
 // 		if input == nil || *input == nil {
 // 			errors.AddError(fieldName, fmt.Errorf("must not be null"))
 // 		}
 // 		return errors
 // 	}
-// }
-
-// List of rules along with required check
-// type Rules[T any] struct {
-// 	required bool
-// 	rules    []Rule[T]
-// }
-//
-// func NewRules[T any](required bool, rules ...Rule[T]) Rules[T] {
-// 	return Rules[T]{
-// 		required: required,
-// 		rules:    rules,
-// 	}
-// }
-// func RequiredRules[T any](rules ...Rule[T]) Rules[T] {
-// 	return Rules[T]{
-// 		required: true,
-// 		rules:    rules,
-// 	}
-// }
-// func OptionalRules[T any](rules ...Rule[T]) Rules[T] {
-// 	return Rules[T]{
-// 		required: false,
-// 		rules:    rules,
-// 	}
-// }
-//
-// func (r Rules[T]) Validate(fieldName string, value *T) ErrorMap {
-// 	errors := make(ErrorMap)
-// 	if value == nil {
-// 		if r.required {
-// 			errors.AddErrors(NewErrorMap(fieldName, fmt.Errorf("required")))
-// 		}
-// 		return errors
-// 	}
-// 	deref_value := *value
-//
-// 	for _, rule := range r.rules {
-// 		if err := rule.Validate(fieldName, deref_value); err != nil {
-// 			errors.AddErrors(err)
-// 		}
-// 	}
-// 	return errors
 // }

@@ -11,13 +11,13 @@ type PersonVgen struct {
 	Nickname **string `json:"nickname"`
 }
 func (v PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.Name.Validate("name", v.Name))
 	errors.AddErrors(rules.Nickname.Validate("nickname", v.Nickname))
 	return errors
 }
 func (rules PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.Name.Validate(prefix+".name", input.Name))
 	errors.AddErrors(rules.Nickname.Validate(prefix+".nickname", input.Nickname))
 	return errors

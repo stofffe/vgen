@@ -11,13 +11,13 @@ type TestVgen struct {
 	allResults *[]ResultVgen
 }
 func (v TestVgen) Validate(rules TestRules) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.bestResult.Validate("bestResult", v.bestResult))
 	errors.AddErrors(rules.allResults.Validate("allResults", v.allResults))
 	return errors
 }
 func (rules TestRules) Validate(prefix string, input TestVgen) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.bestResult.Validate(prefix+".bestResult", input.bestResult))
 	errors.AddErrors(rules.allResults.Validate(prefix+".allResults", input.allResults))
 	return errors
@@ -51,12 +51,12 @@ type ResultVgen struct {
 	score *string
 }
 func (v ResultVgen) Validate(rules ResultRules) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.score.Validate("score", v.score))
 	return errors
 }
 func (rules ResultRules) Validate(prefix string, input ResultVgen) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.score.Validate(prefix+".score", input.score))
 	return errors
 }

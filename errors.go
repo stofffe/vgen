@@ -14,16 +14,15 @@ func (e *ErrorMap) AddError(key string, err error) {
 }
 
 func (e *ErrorMap) AddErrors(errors ErrorMap) {
+	if errors == nil {
+		return
+	}
 	if *e == nil {
 		*e = make(ErrorMap)
 	}
 	for k, v := range errors {
 		(*e)[k] = append((*e)[k], v...)
 	}
-}
-
-func EmptyErrorMap() ErrorMap {
-	return nil
 }
 
 func NewErrorMap(prefix string, errs ...error) ErrorMap {

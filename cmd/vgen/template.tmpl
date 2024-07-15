@@ -38,14 +38,14 @@
 
 {{ define "validation" }}
     func (v {{ .Name }}Vgen) Validate(rules {{ .Name }}Rules) vgen.ErrorMap {
-        errors := vgen.EmptyErrorMap()
+        var errors vgen.ErrorMap
         {{ range .Fields }}
             errors.AddErrors(rules.{{ .Name }}.Validate("{{ .Alias }}", v.{{ .Name }}))
         {{ end }}
         return errors
     }
     func (rules {{ .Name }}Rules) Validate(prefix string, input {{ .Name }}Vgen) vgen.ErrorMap {
-        errors := vgen.EmptyErrorMap()
+        var errors vgen.ErrorMap
         {{ range .Fields }}
             errors.AddErrors(rules.{{ .Name }}.Validate(prefix+".{{ .Alias }}", input.{{ .Name }}))
         {{ end }}

@@ -10,12 +10,12 @@ type VectorVgen struct {
 	vector *[]float32
 }
 func (v VectorVgen) Validate(rules VectorRules) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.vector.Validate("vector", v.vector))
 	return errors
 }
 func (rules VectorRules) Validate(prefix string, input VectorVgen) vgen.ErrorMap {
-	errors := vgen.EmptyErrorMap()
+	var errors vgen.ErrorMap
 	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
 	return errors
 }

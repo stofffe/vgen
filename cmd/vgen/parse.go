@@ -26,7 +26,7 @@ type StructField struct {
 	Name    string
 	Types   []FieldType
 	Tags    string
-	Alias   string // json tag
+	Alias   string
 	Nested  bool
 	Pointer bool
 }
