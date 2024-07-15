@@ -8,7 +8,7 @@ import (
 )
 
 // vgen(include)
-type Custom struct {
+type Vector struct {
 	vector []float32
 }
 
@@ -28,11 +28,11 @@ func Normalized() vgen.RuleFunc[[]float32] {
 }
 
 func main() {
-	vector := CustomVgen{
+	vector := VectorVgen{
 		vector: &[]float32{1, 0, 1},
 	}
 
-	rules := CustomRules{
+	rules := VectorRules{
 		vector: vgen.RulesOptional(
 			vgen.LenEq[[]float32](3),
 			Normalized(),

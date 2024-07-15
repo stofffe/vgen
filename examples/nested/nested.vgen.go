@@ -7,97 +7,35 @@ import (
 	"github.com/stofffe/vgen"
 )
 type TestVgen struct {
-	BestResult *ResultVgen
-	AllResults *[]ResultVgen
-	All2Results *[][]ResultVgen
-	All3Results *[][][]ResultVgen
-	MapResults *[]map[string]ResultVgen
-	Map2Results *[]map[string][]ResultVgen
+	bestResult *ResultVgen
+	allResults *[]ResultVgen
 }
 func (v TestVgen) Validate(rules TestRules) vgen.ErrorMap {
 	errors := vgen.EmptyErrorMap()
-	errors.AddErrors(rules.BestResult.Validate("BestResult", v.BestResult))
-	errors.AddErrors(rules.AllResults.Validate("AllResults", v.AllResults))
-	errors.AddErrors(rules.All2Results.Validate("All2Results", v.All2Results))
-	errors.AddErrors(rules.All3Results.Validate("All3Results", v.All3Results))
-	errors.AddErrors(rules.MapResults.Validate("MapResults", v.MapResults))
-	errors.AddErrors(rules.Map2Results.Validate("Map2Results", v.Map2Results))
+	errors.AddErrors(rules.bestResult.Validate("bestResult", v.bestResult))
+	errors.AddErrors(rules.allResults.Validate("allResults", v.allResults))
 	return errors
 }
 func (rules TestRules) Validate(prefix string, input TestVgen) vgen.ErrorMap {
 	errors := vgen.EmptyErrorMap()
-	errors.AddErrors(rules.BestResult.Validate(prefix+".BestResult", input.BestResult))
-	errors.AddErrors(rules.AllResults.Validate(prefix+".AllResults", input.AllResults))
-	errors.AddErrors(rules.All2Results.Validate(prefix+".All2Results", input.All2Results))
-	errors.AddErrors(rules.All3Results.Validate(prefix+".All3Results", input.All3Results))
-	errors.AddErrors(rules.MapResults.Validate(prefix+".MapResults", input.MapResults))
-	errors.AddErrors(rules.Map2Results.Validate(prefix+".Map2Results", input.Map2Results))
+	errors.AddErrors(rules.bestResult.Validate(prefix+".bestResult", input.bestResult))
+	errors.AddErrors(rules.allResults.Validate(prefix+".allResults", input.allResults))
 	return errors
 }
 type TestRules struct {
-	BestResult vgen.Rules[ResultVgen]
-	AllResults vgen.Rules[[]ResultVgen]
-	All2Results vgen.Rules[[][]ResultVgen]
-	All3Results vgen.Rules[[][][]ResultVgen]
-	MapResults vgen.Rules[[]map[string]ResultVgen]
-	Map2Results vgen.Rules[[]map[string][]ResultVgen]
+	bestResult vgen.Rules[ResultVgen]
+	allResults vgen.Rules[[]ResultVgen]
 }
 func (v TestVgen) Convert() Test {
 	var res Test
-	if v.BestResult != nil {
-		res.BestResult = v.BestResult.Convert()
+	if v.bestResult != nil {
+		res.bestResult = v.bestResult.Convert()
 	}
-	if v.AllResults != nil {
-		elem := *v.AllResults
-		res.AllResults = make([]Result, len(elem))
+	if v.allResults != nil {
+		elem := *v.allResults
+		res.allResults = make([]Result, len(elem))
 		for i0, elem := range elem {
-			res.AllResults[i0] = elem.Convert()
-		}
-	}
-	if v.All2Results != nil {
-		elem := *v.All2Results
-		res.All2Results = make([][]Result, len(elem))
-		for i0, elem := range elem {
-			res.All2Results[i0] = make([]Result, len(elem))
-			for i1, elem := range elem {
-				res.All2Results[i0][i1] = elem.Convert()
-			}
-		}
-	}
-	if v.All3Results != nil {
-		elem := *v.All3Results
-		res.All3Results = make([][][]Result, len(elem))
-		for i0, elem := range elem {
-			res.All3Results[i0] = make([][]Result, len(elem))
-			for i1, elem := range elem {
-				res.All3Results[i0][i1] = make([]Result, len(elem))
-				for i2, elem := range elem {
-					res.All3Results[i0][i1][i2] = elem.Convert()
-				}
-			}
-		}
-	}
-	if v.MapResults != nil {
-		elem := *v.MapResults
-		res.MapResults = make([]map[string]Result, len(elem))
-		for i0, elem := range elem {
-			res.MapResults[i0] = make(map[string]Result, len(elem))
-			for i1, elem := range elem {
-				res.MapResults[i0][i1] = elem.Convert()
-			}
-		}
-	}
-	if v.Map2Results != nil {
-		elem := *v.Map2Results
-		res.Map2Results = make([]map[string][]Result, len(elem))
-		for i0, elem := range elem {
-			res.Map2Results[i0] = make(map[string][]Result, len(elem))
-			for i1, elem := range elem {
-				res.Map2Results[i0][i1] = make([]Result, len(elem))
-				for i2, elem := range elem {
-					res.Map2Results[i0][i1][i2] = elem.Convert()
-				}
-			}
+			res.allResults[i0] = elem.Convert()
 		}
 	}
 	return res
@@ -110,25 +48,25 @@ func (v TestVgen) ValidatedConvert(rules TestRules) (Test, vgen.ErrorMap) {
 	return v.Convert(), errors
 }
 type ResultVgen struct {
-	Score *string
+	score *string
 }
 func (v ResultVgen) Validate(rules ResultRules) vgen.ErrorMap {
 	errors := vgen.EmptyErrorMap()
-	errors.AddErrors(rules.Score.Validate("name", v.Score))
+	errors.AddErrors(rules.score.Validate("score", v.score))
 	return errors
 }
 func (rules ResultRules) Validate(prefix string, input ResultVgen) vgen.ErrorMap {
 	errors := vgen.EmptyErrorMap()
-	errors.AddErrors(rules.Score.Validate(prefix+".name", input.Score))
+	errors.AddErrors(rules.score.Validate(prefix+".score", input.score))
 	return errors
 }
 type ResultRules struct {
-	Score vgen.Rules[string]
+	score vgen.Rules[string]
 }
 func (v ResultVgen) Convert() Result {
 	var res Result
-	if v.Score != nil {
-		res.Score = *v.Score
+	if v.score != nil {
+		res.score = *v.score
 	}
 	return res
 }

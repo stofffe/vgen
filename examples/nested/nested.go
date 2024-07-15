@@ -11,17 +11,13 @@ import (
 
 // vgen(include)
 type Test struct {
-	BestResult  Result                // vgen(nested)
-	AllResults  []Result              // vgen(nested)
-	All2Results [][]Result            // vgen(nested)
-	All3Results [][][]Result          // vgen(nested)
-	MapResults  []map[string]Result   // vgen(nested)
-	Map2Results []map[string][]Result // vgen(nested)
+	bestResult Result   // vgen(nested)
+	allResults []Result // vgen(nested)
 }
 
 // vgen(include)
 type Result struct {
-	Score string // vgen(alias=name)
+	score string // vgen(alias=score)
 }
 
 var (
@@ -36,59 +32,31 @@ var (
 )
 
 func main() {
-	ma1 := make(map[string]ResultVgen)
-	ma1["bobC"] = ResultVgen{Score: &C}
-	ma1["bobA"] = ResultVgen{Score: &A}
-	ma2 := make(map[string]ResultVgen)
-	ma2["aaa"] = ResultVgen{Score: &A}
-	ma3 := make(map[string][]ResultVgen)
-	ma3["ooo"] = []ResultVgen{
-		{Score: &C},
-		{Score: &B},
-	}
 	test := TestVgen{
-		BestResult: &ResultVgen{
-			Score: &A,
+		bestResult: &ResultVgen{
+			score: &X,
 		},
-		AllResults: &[]ResultVgen{
-			{Score: &B},
-			{Score: &D},
-			{Score: &X},
-			{Score: &A},
+		allResults: &[]ResultVgen{
+			{score: &B},
+			{score: &D},
+			{score: &X},
+			{score: &A},
 			{},
-			{Score: &C},
-		},
-		All2Results: &[][]ResultVgen{
-			{
-				{Score: &B},
-				{Score: &B},
-				{Score: &B},
-			},
-			{
-				{Score: &A},
-				{Score: &A},
-				{Score: &A},
-			},
-		},
-		MapResults: &[]map[string]ResultVgen{
-			ma1, ma2,
-		},
-		Map2Results: &[]map[string][]ResultVgen{
-			ma3,
+			{score: &C},
 		},
 	}
 
 	resultRules := ResultRules{
-		Score: vgen.RulesRequired(
+		score: vgen.RulesRequired(
 			vgen.OneOf(A, B, C, D, E),
 		),
 	}
 
 	testRules := TestRules{
-		BestResult: vgen.RulesOptional(
+		bestResult: vgen.RulesOptional(
 			resultRules,
 		),
-		AllResults: vgen.RulesOptional(
+		allResults: vgen.RulesOptional(
 			vgen.List(
 				resultRules,
 			),

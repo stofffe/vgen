@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -9,38 +8,28 @@ import (
 )
 
 // vgen(include)
-type Pointer struct {
-	Name *string `json:"name"` // vgen(alias=name)
-	Age  *int    `json:"age"`  // vgen(alias=name)
+type Person struct {
+	Name     *string `json:"name"`     // vgen(alias=name)
+	Nickname *string `json:"nickname"` // vgen(alias=nickname)
 }
 
 func main() {
-	js := `{
-        "name": null,
-        "age": 12
-    }`
-
-	var pointer PointerVgen
-
-	err := json.Unmarshal([]byte(js), &pointer)
-	if err != nil {
-		log.Fatal(err)
+	nickname := "bob"
+	nicknamePtr := &nickname
+	person := PersonVgen{
+		Nickname: &nicknamePtr,
 	}
 
-	rules := PointerRules{
-		Name: vgen.RulesRequired(
+	rules := PersonRules{
+		Name: vgen.RulesRequired[*string](),
+		Nickname: vgen.RulesOptional(
 			vgen.Deref(
-				vgen.Eq("bobby"),
-			),
-		),
-		Age: vgen.RulesRequired(
-			vgen.Deref(
-				vgen.Gte(18),
+				vgen.NotOneOf("bob", "bobby"),
 			),
 		),
 	}
 
-	result, verr := pointer.ValidatedConvert(rules)
+	result, verr := person.ValidatedConvert(rules)
 	if verr != nil {
 		log.Fatal(verr.Debug())
 	}

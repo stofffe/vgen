@@ -27,16 +27,16 @@ func main() {
 			vgen.Eq("bob"),
 		),
 		nickname: vgen.RulesOptional(
-			vgen.Eq("bobsson"),
+			vgen.Eq("bobby"),
 		),
-		age: vgen.RulesRequired(
+		age: vgen.RulesOptional(
 			vgen.Gte(18),
 		),
 	}
 
-	p, err := person.ValidatedConvert(rules)
+	result, err := person.ValidatedConvert(rules)
 	if err != nil {
 		log.Fatal(err.Debug())
 	}
-	fmt.Println(p)
+	fmt.Println(result)
 }
