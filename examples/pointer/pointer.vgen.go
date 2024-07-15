@@ -14,7 +14,7 @@ func (v PointerVgen) Validate(rules PointerRules) vgen.ErrorMap {
 	errors.AddErrors(rules.Name.Validate("name", v.Name))
 	return errors
 }
-func (rules PointerRules) Validate(prefix string, input *PointerVgen) vgen.ErrorMap {
+func (rules PointerRules) Validate(prefix string, input PointerVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.Name.Validate(prefix+".name", input.Name))
 	return errors
@@ -28,4 +28,11 @@ func (v PointerVgen) Convert() Pointer {
 		res.Name = *v.Name
 	}
 	return res
+}
+func (v PointerVgen) ValidatedConvert(rules PointerRules) (Pointer, vgen.ErrorMap) {
+	errors := v.Validate(rules)
+	if errors.HasError() {
+		return Pointer{}, errors
+	}
+	return v.Convert(), errors
 }

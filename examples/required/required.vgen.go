@@ -18,7 +18,7 @@ func (v PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
 	errors.AddErrors(rules.age.Validate("age", v.age))
 	return errors
 }
-func (rules PersonRules) Validate(prefix string, input *PersonVgen) vgen.ErrorMap {
+func (rules PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.name.Validate(prefix+".name", input.name))
 	errors.AddErrors(rules.nickname.Validate(prefix+".nickname", input.nickname))
@@ -42,4 +42,11 @@ func (v PersonVgen) Convert() Person {
 		res.age = *v.age
 	}
 	return res
+}
+func (v PersonVgen) ValidatedConvert(rules PersonRules) (Person, vgen.ErrorMap) {
+	errors := v.Validate(rules)
+	if errors.HasError() {
+		return Person{}, errors
+	}
+	return v.Convert(), errors
 }

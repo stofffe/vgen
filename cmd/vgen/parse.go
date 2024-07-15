@@ -152,6 +152,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		tags = fieldNode.Tag.Value
 	}
 
+	// parse tags
 	commentTags, err := parseFieldTags(comments)
 	if err != nil {
 		return StructField{}, fmt.Errorf("could not parse field tags: %v", err)
@@ -162,6 +163,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		alias = commentTags.name
 	}
 
+	// parse field types
 	fieldTypeInfo := FieldTypeInfo{
 		Types:     []FieldType{},
 		Pointer:   false,
@@ -288,13 +290,3 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 	}
 	return nil
 }
-
-// func extractJsonName(tag string) (string, bool) {
-// 	reg := regexp.MustCompile(`json:"[^"]*"`)
-// 	match := reg.FindString(tag)
-// 	match = strings.TrimPrefix(match, `json:"`)
-// 	match = strings.TrimSuffix(match, `"`)
-// 	match = strings.Split(match, ",")[0]
-// 	ok := match != ""
-// 	return match, ok
-// }

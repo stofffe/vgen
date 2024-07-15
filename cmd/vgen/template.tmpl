@@ -44,7 +44,7 @@
         {{ end }}
         return errors
     }
-    func (rules {{ .Name }}Rules) Validate(prefix string, input *{{ .Name }}Vgen) vgen.ErrorMap {
+    func (rules {{ .Name }}Rules) Validate(prefix string, input {{ .Name }}Vgen) vgen.ErrorMap {
         errors := make(vgen.ErrorMap)
         {{ range .Fields }}
             errors.AddErrors(rules.{{ .Name }}.Validate(prefix+".{{ .Alias }}", input.{{ .Name }}))
@@ -82,5 +82,15 @@
             }
         {{ end }}
         return res
+    }
+{{ end }}
+
+{{ define "validatedConvert" }}
+    func (v {{ .Name }}Vgen) ValidatedConvert(rules {{ .Name }}Rules) ({{ .Name }}, vgen.ErrorMap) {
+        errors := v.Validate(rules)
+        if errors.HasError() {
+            return {{ .Name }}{}, errors
+        }
+        return v.Convert(), errors
     }
 {{ end }}

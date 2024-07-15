@@ -14,7 +14,7 @@ func (v CustomVgen) Validate(rules CustomRules) vgen.ErrorMap {
 	errors.AddErrors(rules.vector.Validate("vector", v.vector))
 	return errors
 }
-func (rules CustomRules) Validate(prefix string, input *CustomVgen) vgen.ErrorMap {
+func (rules CustomRules) Validate(prefix string, input CustomVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
 	return errors
@@ -28,4 +28,11 @@ func (v CustomVgen) Convert() Custom {
 		res.vector = *v.vector
 	}
 	return res
+}
+func (v CustomVgen) ValidatedConvert(rules CustomRules) (Custom, vgen.ErrorMap) {
+	errors := v.Validate(rules)
+	if errors.HasError() {
+		return Custom{}, errors
+	}
+	return v.Convert(), errors
 }

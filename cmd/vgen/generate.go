@@ -73,6 +73,12 @@ func generateFile(info ParseInfo) ([]byte, error) {
 			return nil, fmt.Errorf("could not execute template convert: %v", err)
 		}
 
+		// validated convert
+		err = tmpl.ExecuteTemplate(&buffer, "validatedConvert", structType)
+		if err != nil {
+			return nil, fmt.Errorf("could not execute template validatedConvert: %v", err)
+		}
+
 	}
 
 	bytes := buffer.Bytes()

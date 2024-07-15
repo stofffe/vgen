@@ -81,17 +81,16 @@ func main() {
 	fmt.Println(converted)
 
 	resultRules := ResultRules{
-		Score: vgen.NewRules(
-			vgen.Required[string](),
+		Score: vgen.RulesRequired(
 			vgen.OneOf(A, B, C, D, E),
 		),
 	}
 
 	testRules := TestRules{
-		BestResult: vgen.NewRules(
+		BestResult: vgen.RulesOptional(
 			vgen.Nested(resultRules),
 		),
-		AllResults: vgen.NewRules(
+		AllResults: vgen.RulesOptional(
 			vgen.List(
 				vgen.Nested(resultRules),
 			),

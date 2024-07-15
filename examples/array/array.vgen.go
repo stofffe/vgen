@@ -16,7 +16,7 @@ func (v ArrayVgen) Validate(rules ArrayRules) vgen.ErrorMap {
 	errors.AddErrors(rules.matrix.Validate("matrix", v.matrix))
 	return errors
 }
-func (rules ArrayRules) Validate(prefix string, input *ArrayVgen) vgen.ErrorMap {
+func (rules ArrayRules) Validate(prefix string, input ArrayVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
 	errors.AddErrors(rules.matrix.Validate(prefix+".matrix", input.matrix))
@@ -35,4 +35,11 @@ func (v ArrayVgen) Convert() Array {
 		res.matrix = *v.matrix
 	}
 	return res
+}
+func (v ArrayVgen) ValidatedConvert(rules ArrayRules) (Array, vgen.ErrorMap) {
+	errors := v.Validate(rules)
+	if errors.HasError() {
+		return Array{}, errors
+	}
+	return v.Convert(), errors
 }

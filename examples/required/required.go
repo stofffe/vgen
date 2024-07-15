@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/stofffe/vgen"
 )
@@ -22,18 +23,20 @@ func main() {
 	}
 
 	rules := PersonRules{
-		name: vgen.NewRules( // required
-			vgen.Required[string](),
+		name: vgen.RulesRequired( // required
 			vgen.Eq("bob"),
 		),
-		nickname: vgen.NewRules( // not required
+		nickname: vgen.RulesOptional(
 			vgen.Eq("bobsson"),
 		),
-		age: vgen.NewRules(
+		age: vgen.RulesRequired(
 			vgen.Gte(18),
 		),
 	}
 
-	err := person.Validate(rules)
-	fmt.Println(err.Debug())
+	p, err := person.ValidatedConvert(rules)
+	if err.HasError() {
+		log.Fatal(err.Debug())
+	}
+	fmt.Println(p)
 }

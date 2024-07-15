@@ -26,8 +26,7 @@ func main() {
 	}
 
 	rules := PointerRules{
-		Name: vgen.NewRules(
-			vgen.Required[*string](),
+		Name: vgen.RulesRequired(
 			vgen.Deref(
 				vgen.Eq("bobby"),
 			),
@@ -36,7 +35,4 @@ func main() {
 
 	errs := pointer.Validate(rules)
 	fmt.Println(errs.Debug())
-	// for _, v := range pointer.Name {
-	// 	fmt.Println(*v)
-	// }
 }

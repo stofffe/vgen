@@ -246,8 +246,6 @@ func handleFile(path string) (int, error) {
 		return 0, fmt.Errorf("could not parse file: %v", err)
 	}
 
-	fmt.Printf("%#v\n", info)
-
 	// generate vgen file from info
 	buffer, err := generateFile(info)
 	if err != nil {

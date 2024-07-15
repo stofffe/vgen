@@ -14,9 +14,9 @@ type Custom struct {
 // Custom rule
 // Components must sum to 1
 func Normalized() vgen.RuleFunc[[]float32] {
-	return func(field_name string, input *[]float32) vgen.ErrorMap {
+	return func(field_name string, input []float32) vgen.ErrorMap {
 		var sum float32
-		for _, v := range *input {
+		for _, v := range input {
 			sum += v
 		}
 		if sum != 1.0 {
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	rules := CustomRules{
-		vector: vgen.NewRules(
+		vector: vgen.RulesOptional(
 			vgen.LenEq[[]float32](3),
 			Normalized(),
 		),

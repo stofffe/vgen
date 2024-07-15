@@ -14,7 +14,7 @@ func (v CharacterVgen) Validate(rules CharacterRules) vgen.ErrorMap {
 	errors.AddErrors(rules.stats.Validate("stats", v.stats))
 	return errors
 }
-func (rules CharacterRules) Validate(prefix string, input *CharacterVgen) vgen.ErrorMap {
+func (rules CharacterRules) Validate(prefix string, input CharacterVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.stats.Validate(prefix+".stats", input.stats))
 	return errors
@@ -28,4 +28,11 @@ func (v CharacterVgen) Convert() Character {
 		res.stats = *v.stats
 	}
 	return res
+}
+func (v CharacterVgen) ValidatedConvert(rules CharacterRules) (Character, vgen.ErrorMap) {
+	errors := v.Validate(rules)
+	if errors.HasError() {
+		return Character{}, errors
+	}
+	return v.Convert(), errors
 }
