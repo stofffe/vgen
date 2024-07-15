@@ -63,8 +63,13 @@ func parseFile(path string) (ParseInfo, error) {
 		if node.Tok == token.TYPE {
 			// Check for tag
 			comment := node.Doc.Text()
-			if !strings.Contains(comment, includeTag) {
-				return true
+			typeTags, err := parseTypeTags(comment)
+			if err != nil {
+				fileErr = fmt.Errorf("could not parse type tags: %v", err)
+				return false
+			}
+			if !typeTags.include {
+				return false
 			}
 
 			// Parse type
@@ -159,8 +164,8 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 	}
 	nested := commentTags.include
 	alias := fieldName
-	if commentTags.name != "" {
-		alias = commentTags.name
+	if commentTags.alias != "" {
+		alias = commentTags.alias
 	}
 
 	// parse field types
@@ -188,49 +193,6 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		Types:   fieldTypeInfo.Types,
 		Pointer: fieldTypeInfo.Pointer,
 	}, nil
-}
-
-type FieldTags struct {
-	include bool
-	name    string
-}
-
-func parseFieldTags(comment string) (FieldTags, error) {
-	// default tags
-	tags := FieldTags{
-		name:    "",
-		include: false,
-	}
-
-	reg := regexp.MustCompile(`vgen\((?s).*\)`)
-	match := reg.FindString(comment)
-
-	if match == "" {
-		return tags, nil
-	}
-
-	match = strings.TrimPrefix(match, "vgen(")
-	match = strings.TrimSuffix(match, ")")
-	args := strings.Split(match, ",")
-
-	for _, arg := range args {
-		arg = strings.TrimSpace(arg)
-		split := strings.Split(arg, "=")
-		ident := split[0]
-		switch ident {
-		case "nested", "n":
-			tags.include = true
-		case "alias":
-			if len(split) < 2 || split[1] == "" {
-				return FieldTags{}, fmt.Errorf("name must have second argument")
-			}
-			name := split[1]
-			tags.name = name
-		default:
-			return FieldTags{}, fmt.Errorf("unknown tag %v", ident)
-		}
-	}
-	return tags, nil
 }
 
 type FieldType interface {
@@ -289,4 +251,82 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 		return fmt.Errorf("unsupported field type: %T", fieldNode)
 	}
 	return nil
+}
+
+type FieldTags struct {
+	include bool
+	alias   string
+}
+
+func parseFieldTags(comment string) (FieldTags, error) {
+	// default tags
+	tags := FieldTags{
+		alias:   "",
+		include: false,
+	}
+
+	reg := regexp.MustCompile(`vgen\((?s).*\)`)
+	match := reg.FindString(comment)
+
+	if match == "" {
+		return tags, nil
+	}
+
+	match = strings.TrimPrefix(match, "vgen(")
+	match = strings.TrimSuffix(match, ")")
+	args := strings.Split(match, ",")
+
+	for _, arg := range args {
+		arg = strings.TrimSpace(arg)
+		split := strings.Split(arg, "=")
+		ident := split[0]
+		switch ident {
+		case "nested", "n":
+			tags.include = true
+		case "alias":
+			if len(split) < 2 || split[1] == "" {
+				return FieldTags{}, fmt.Errorf("name must have second argument")
+			}
+			name := split[1]
+			tags.alias = name
+		default:
+			return FieldTags{}, fmt.Errorf("unknown tag %v", ident)
+		}
+	}
+	return tags, nil
+}
+
+type TypeTags struct {
+	include bool
+}
+
+func parseTypeTags(comment string) (TypeTags, error) {
+	// default tags
+	tags := TypeTags{
+		include: false,
+	}
+
+	reg := regexp.MustCompile(`vgen\((?s).*\)`)
+	match := reg.FindString(comment)
+
+	if match == "" {
+		return tags, nil
+	}
+
+	match = strings.TrimPrefix(match, "vgen(")
+	match = strings.TrimSuffix(match, ")")
+	args := strings.Split(match, ",")
+
+	for _, arg := range args {
+		arg = strings.TrimSpace(arg)
+		split := strings.Split(arg, "=")
+		ident := split[0]
+		switch ident {
+		case "include", "i":
+			tags.include = true
+		default:
+			return TypeTags{}, fmt.Errorf("unknown type tag %v", ident)
+		}
+	}
+	return tags, nil
 }

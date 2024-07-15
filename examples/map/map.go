@@ -6,7 +6,7 @@ import (
 	"github.com/stofffe/vgen"
 )
 
-// vgen
+// vgen(include)
 type Character struct {
 	stats map[string]int
 }
@@ -20,7 +20,7 @@ func main() {
 	}
 
 	rules := CharacterRules{
-		stats: vgen.NewRules(
+		stats: vgen.RulesOptional(
 			vgen.MapHasKey[map[string]int]("speed"),
 			vgen.MapHasKey[map[string]int]("strength"),
 			vgen.MapHasKey[map[string]int]("intelligence"),

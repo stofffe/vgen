@@ -10,12 +10,12 @@ import (
 
 // vgen(include)
 type Test struct {
-	BestResult  Result                // vgen(n, alias=pet)
-	AllResults  []Result              // vgen(n, alias=pets)
-	All2Results [][]Result            // vgen(n)
-	All3Results [][][]Result          // vgen(n)
-	MapResults  []map[string]Result   // vgen(n)
-	Map2Results []map[string][]Result // vgen(n)
+	BestResult  Result                // vgen(nested)
+	AllResults  []Result              // vgen(nested)
+	All2Results [][]Result            // vgen(nested)
+	All3Results [][][]Result          // vgen(nested)
+	MapResults  []map[string]Result   // vgen(nested)
+	Map2Results []map[string][]Result // vgen(nested)
 }
 
 // vgen(include)

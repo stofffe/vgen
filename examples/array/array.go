@@ -6,7 +6,7 @@ import (
 	"github.com/stofffe/vgen"
 )
 
-// vgen
+// vgen(include)
 type Array struct {
 	vector []int
 	matrix [][]int
@@ -23,14 +23,14 @@ func main() {
 	}
 
 	rules := ArrayRules{
-		vector: vgen.NewRules(
+		vector: vgen.RulesOptional(
 			vgen.LenEq[[]int](3),
 			vgen.List(
 				vgen.Gt(0),
 				vgen.Lte(10),
 			),
 		),
-		matrix: vgen.NewRules(
+		matrix: vgen.RulesOptional(
 			vgen.LenEq[[][]int](3),
 			vgen.List(
 				vgen.LenEq[[]int](3),

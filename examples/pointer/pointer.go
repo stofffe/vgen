@@ -8,14 +8,16 @@ import (
 	"github.com/stofffe/vgen"
 )
 
-// vgen
+// vgen(include)
 type Pointer struct {
 	Name *string `json:"name"` // vgen(alias=name)
+	Age  *int    `json:"age"`  // vgen(alias=name)
 }
 
 func main() {
 	js := `{
-        "name": null
+        "name": null,
+        "age": 12
     }`
 
 	var pointer PointerVgen
@@ -29,6 +31,11 @@ func main() {
 		Name: vgen.RulesRequired(
 			vgen.Deref(
 				vgen.Eq("bobby"),
+			),
+		),
+		Age: vgen.RulesRequired(
+			vgen.Deref(
+				vgen.Gte(18),
 			),
 		),
 	}

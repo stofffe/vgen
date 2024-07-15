@@ -6,7 +6,7 @@ import (
 	"github.com/stofffe/vgen"
 )
 
-// vgen
+// vgen(include)
 type Custom struct {
 	vector []float32
 }

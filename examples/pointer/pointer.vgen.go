@@ -8,24 +8,31 @@ import (
 )
 type PointerVgen struct {
 	Name **string `json:"name"`
+	Age **int `json:"age"`
 }
 func (v PointerVgen) Validate(rules PointerRules) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.Name.Validate("name", v.Name))
+	errors.AddErrors(rules.Age.Validate("name", v.Age))
 	return errors
 }
 func (rules PointerRules) Validate(prefix string, input PointerVgen) vgen.ErrorMap {
 	errors := make(vgen.ErrorMap)
 	errors.AddErrors(rules.Name.Validate(prefix+".name", input.Name))
+	errors.AddErrors(rules.Age.Validate(prefix+".name", input.Age))
 	return errors
 }
 type PointerRules struct {
 	Name vgen.Rules[*string]
+	Age vgen.Rules[*int]
 }
 func (v PointerVgen) Convert() Pointer {
 	var res Pointer
 	if v.Name != nil {
 		res.Name = *v.Name
+	}
+	if v.Age != nil {
+		res.Age = *v.Age
 	}
 	return res
 }

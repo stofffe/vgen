@@ -7,7 +7,7 @@ import (
 	"github.com/stofffe/vgen"
 )
 
-// vgen
+// vgen(include)
 type Person struct {
 	name     string
 	nickname string
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	rules := PersonRules{
-		name: vgen.RulesRequired( // required
+		name: vgen.RulesRequired(
 			vgen.Eq("bob"),
 		),
 		nickname: vgen.RulesOptional(
