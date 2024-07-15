@@ -150,7 +150,7 @@ func CustomMessage[T any](message string, rule Rule[T]) RuleFunc[T] {
 		errors := EmptyErrorMap()
 		innerErrors := rule.Validate(fieldName, input)
 
-		if innerErrors.HasError() {
+		if innerErrors != nil {
 			errors.AddError(fieldName, fmt.Errorf("%s", message))
 		}
 

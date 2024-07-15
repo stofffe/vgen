@@ -10,12 +10,12 @@ type CustomVgen struct {
 	vector *[]float32
 }
 func (v CustomVgen) Validate(rules CustomRules) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
+	errors := vgen.EmptyErrorMap()
 	errors.AddErrors(rules.vector.Validate("vector", v.vector))
 	return errors
 }
 func (rules CustomRules) Validate(prefix string, input CustomVgen) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
+	errors := vgen.EmptyErrorMap()
 	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
 	return errors
 }
@@ -31,7 +31,7 @@ func (v CustomVgen) Convert() Custom {
 }
 func (v CustomVgen) ValidatedConvert(rules CustomRules) (Custom, vgen.ErrorMap) {
 	errors := v.Validate(rules)
-	if errors.HasError() {
+	if errors != nil {
 		return Custom{}, errors
 	}
 	return v.Convert(), errors

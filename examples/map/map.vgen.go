@@ -10,12 +10,12 @@ type CharacterVgen struct {
 	stats *map[string]int
 }
 func (v CharacterVgen) Validate(rules CharacterRules) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
+	errors := vgen.EmptyErrorMap()
 	errors.AddErrors(rules.stats.Validate("stats", v.stats))
 	return errors
 }
 func (rules CharacterRules) Validate(prefix string, input CharacterVgen) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
+	errors := vgen.EmptyErrorMap()
 	errors.AddErrors(rules.stats.Validate(prefix+".stats", input.stats))
 	return errors
 }
@@ -31,7 +31,7 @@ func (v CharacterVgen) Convert() Character {
 }
 func (v CharacterVgen) ValidatedConvert(rules CharacterRules) (Character, vgen.ErrorMap) {
 	errors := v.Validate(rules)
-	if errors.HasError() {
+	if errors != nil {
 		return Character{}, errors
 	}
 	return v.Convert(), errors

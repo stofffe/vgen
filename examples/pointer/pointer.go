@@ -40,6 +40,9 @@ func main() {
 		),
 	}
 
-	errs := pointer.Validate(rules)
-	fmt.Println(errs.Debug())
+	result, verr := pointer.ValidatedConvert(rules)
+	if verr != nil {
+		log.Fatal(verr.Debug())
+	}
+	fmt.Println(result)
 }

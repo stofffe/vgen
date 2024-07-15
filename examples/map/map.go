@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/stofffe/vgen"
 )
@@ -30,6 +31,9 @@ func main() {
 		),
 	}
 
-	err := character.Validate(rules)
-	fmt.Println(err.Debug())
+	result, verr := character.ValidatedConvert(rules)
+	if verr != nil {
+		log.Fatal(verr.Debug())
+	}
+	fmt.Println(result)
 }

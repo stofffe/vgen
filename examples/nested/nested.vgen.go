@@ -15,9 +15,9 @@ type TestVgen struct {
 	Map2Results *[]map[string][]ResultVgen
 }
 func (v TestVgen) Validate(rules TestRules) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
-	errors.AddErrors(rules.BestResult.Validate("pet", v.BestResult))
-	errors.AddErrors(rules.AllResults.Validate("pets", v.AllResults))
+	errors := vgen.EmptyErrorMap()
+	errors.AddErrors(rules.BestResult.Validate("BestResult", v.BestResult))
+	errors.AddErrors(rules.AllResults.Validate("AllResults", v.AllResults))
 	errors.AddErrors(rules.All2Results.Validate("All2Results", v.All2Results))
 	errors.AddErrors(rules.All3Results.Validate("All3Results", v.All3Results))
 	errors.AddErrors(rules.MapResults.Validate("MapResults", v.MapResults))
@@ -25,9 +25,9 @@ func (v TestVgen) Validate(rules TestRules) vgen.ErrorMap {
 	return errors
 }
 func (rules TestRules) Validate(prefix string, input TestVgen) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
-	errors.AddErrors(rules.BestResult.Validate(prefix+".pet", input.BestResult))
-	errors.AddErrors(rules.AllResults.Validate(prefix+".pets", input.AllResults))
+	errors := vgen.EmptyErrorMap()
+	errors.AddErrors(rules.BestResult.Validate(prefix+".BestResult", input.BestResult))
+	errors.AddErrors(rules.AllResults.Validate(prefix+".AllResults", input.AllResults))
 	errors.AddErrors(rules.All2Results.Validate(prefix+".All2Results", input.All2Results))
 	errors.AddErrors(rules.All3Results.Validate(prefix+".All3Results", input.All3Results))
 	errors.AddErrors(rules.MapResults.Validate(prefix+".MapResults", input.MapResults))
@@ -104,7 +104,7 @@ func (v TestVgen) Convert() Test {
 }
 func (v TestVgen) ValidatedConvert(rules TestRules) (Test, vgen.ErrorMap) {
 	errors := v.Validate(rules)
-	if errors.HasError() {
+	if errors != nil {
 		return Test{}, errors
 	}
 	return v.Convert(), errors
@@ -113,12 +113,12 @@ type ResultVgen struct {
 	Score *string
 }
 func (v ResultVgen) Validate(rules ResultRules) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
+	errors := vgen.EmptyErrorMap()
 	errors.AddErrors(rules.Score.Validate("name", v.Score))
 	return errors
 }
 func (rules ResultRules) Validate(prefix string, input ResultVgen) vgen.ErrorMap {
-	errors := make(vgen.ErrorMap)
+	errors := vgen.EmptyErrorMap()
 	errors.AddErrors(rules.Score.Validate(prefix+".name", input.Score))
 	return errors
 }
@@ -134,7 +134,7 @@ func (v ResultVgen) Convert() Result {
 }
 func (v ResultVgen) ValidatedConvert(rules ResultRules) (Result, vgen.ErrorMap) {
 	errors := v.Validate(rules)
-	if errors.HasError() {
+	if errors != nil {
 		return Result{}, errors
 	}
 	return v.Convert(), errors

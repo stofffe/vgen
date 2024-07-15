@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/stofffe/vgen"
 )
@@ -77,9 +78,6 @@ func main() {
 		},
 	}
 
-	converted := test.Convert()
-	fmt.Println(converted)
-
 	resultRules := ResultRules{
 		Score: vgen.RulesRequired(
 			vgen.OneOf(A, B, C, D, E),
@@ -88,15 +86,18 @@ func main() {
 
 	testRules := TestRules{
 		BestResult: vgen.RulesOptional(
-			vgen.Nested(resultRules),
+			resultRules,
 		),
 		AllResults: vgen.RulesOptional(
 			vgen.List(
-				vgen.Nested(resultRules),
+				resultRules,
 			),
 		),
 	}
 
-	err := test.Validate(testRules)
-	fmt.Println(err.Debug())
+	result, verr := test.ValidatedConvert(testRules)
+	if verr != nil {
+		log.Fatal(verr.Debug())
+	}
+	fmt.Println(result)
 }

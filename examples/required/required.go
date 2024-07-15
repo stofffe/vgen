@@ -35,7 +35,7 @@ func main() {
 	}
 
 	p, err := person.ValidatedConvert(rules)
-	if err.HasError() {
+	if err != nil {
 		log.Fatal(err.Debug())
 	}
 	fmt.Println(p)
