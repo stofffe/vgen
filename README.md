@@ -85,8 +85,9 @@ More examples can be found in [examples](examples/)
 
 ## Tags
 
-Additional functionality can be added to structs and fields using tags 
+Types and fields can be annotated with tags, the tags inform the ```vgen``` compiler what code to generate
 
+#### Example
 ```go
 // vgen(i)
 type Person struct {
