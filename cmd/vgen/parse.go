@@ -37,10 +37,6 @@ func (s StructField) Type() string {
 	if s.Pointer {
 		builder.WriteByte('*')
 	}
-	if s.Import != "" {
-		builder.WriteString(s.Import)
-		builder.WriteByte('.')
-	}
 	for _, t := range s.Types {
 		builder.WriteString(t.Type())
 	}
@@ -245,12 +241,17 @@ type FieldType interface {
 }
 
 type FieldTypeIdent struct{ name string }
+type FieldTypeImport struct {
+	imp  string
+	name string
+}
 type FieldTypeArray struct{}
 type FieldTypeMap struct{}
 
-func (f FieldTypeIdent) Type() string { return f.name }
-func (f FieldTypeArray) Type() string { return "[]" }
-func (f FieldTypeMap) Type() string   { return "map[string]" }
+func (f FieldTypeIdent) Type() string  { return f.name }
+func (f FieldTypeImport) Type() string { return f.imp + "." + f.name }
+func (f FieldTypeArray) Type() string  { return "[]" }
+func (f FieldTypeMap) Type() string    { return "map[string]" }
 
 type FieldTypeInfo struct {
 	Types     []FieldType
@@ -304,7 +305,7 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 			return fmt.Errorf("import selector is not ast.Ident")
 		}
 		f.Import = imp.Name
-		f.Types = append(f.Types, FieldTypeIdent{name: node.Sel.Name})
+		f.Types = append(f.Types, FieldTypeImport{imp: imp.Name, name: node.Sel.Name})
 	default:
 		return fmt.Errorf("unsupported field type: %T", fieldNode)
 	}
