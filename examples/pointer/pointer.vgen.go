@@ -4,7 +4,7 @@
 //
 package main
 import (
-	vgen "github.com/stofffe/vgen"
+	vgen "github.com/stofffe/vgen/pkg/vgen"
 )
 type PersonVgen struct {
 	Name **string `json:"name"`

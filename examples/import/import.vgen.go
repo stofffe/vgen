@@ -5,7 +5,7 @@
 package main
 import (
 	timer "github.com/stofffe/vgen/examples/import/timer"
-	vgen "github.com/stofffe/vgen"
+	vgen "github.com/stofffe/vgen/pkg/vgen"
 )
 type ImportVgen struct {
 	clock *timer.Clock

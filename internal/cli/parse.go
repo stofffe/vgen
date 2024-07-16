@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -121,7 +121,7 @@ func parseFile(path string) (ParseInfo, error) {
 
 	// Save all imports used in vgen type fields
 	imports := map[string]string{
-		"vgen": "github.com/stofffe/vgen",
+		"vgen": "github.com/stofffe/vgen/pkg/vgen",
 	}
 	for _, typ := range structTypes {
 		for _, field := range typ.Fields {

@@ -4,7 +4,7 @@
 //
 package timer
 import (
-	vgen "github.com/stofffe/vgen"
+	vgen "github.com/stofffe/vgen/pkg/vgen"
 )
 type TimerVgen struct {
 	Time *int

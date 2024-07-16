@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/stofffe/vgen"
 	"github.com/stofffe/vgen/examples/import/timer"
+	"github.com/stofffe/vgen/pkg/vgen"
 )
 
 // vgen(include)

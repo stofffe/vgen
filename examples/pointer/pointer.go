@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/stofffe/vgen"
+	"github.com/stofffe/vgen/pkg/vgen"
 )
 
 // vgen(include)

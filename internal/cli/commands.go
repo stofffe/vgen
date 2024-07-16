@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 
 const suffix = ".vgen.go"
 
-func createCommands() {
+func CreateCommands() {
 	// root
 	rootCmd := &cobra.Command{
 		Use:   "vgen",
