@@ -15,9 +15,9 @@ type Import struct {
 }
 
 func ClockIsZero() vgen.RuleFunc[timer.Clock] {
-	return func(fieldName string, input timer.Clock) vgen.ErrorMap {
+	return func(key string, input timer.Clock) vgen.ErrorMap {
 		if input.Time != 0 {
-			return vgen.NewErrorMap(fieldName, fmt.Errorf("time must be zero"))
+			return vgen.NewErrorMap(key, fmt.Errorf("time must be zero"))
 		}
 		return nil
 	}

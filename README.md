@@ -104,3 +104,50 @@ type Person struct {
 |-|-|-|
 | nested | n | Allow for nested vgen types |
 | alias | a | Give field different name in errors |
+
+## Rules
+
+#### Rule
+
+vgen validation is based of the ```Rule``` interface
+
+```go
+type Rule[T any] interface {
+	Validate(key string, input T) ErrorMap
+}
+```
+
+#### RuleFunc
+
+Custom rules can be created by implementing this ```Rule```, or by creating a ```RuleFunc```
+which automatically implements the interface. See [custom example](examples/custom/custom.go) for more information
+
+```go
+type RuleFunc[T any] func(key string, input T) ErrorMap
+```
+
+#### Implemented rules
+
+vgen includes a lot of default rules, here is the currently implemented rules
+
+| Rule | Description |
+|-|-|
+| Nested | Validate nested vgen types |
+| List | Validate each element of list |
+| MapValue | Validate each value element of map |
+| MapHasKey | Validate map has key |
+| Eq | Validate equality |
+| Gt | Validate greater than |
+| Gte | Validate greater than or equal to |
+| Lt | Validate less than |
+| Lte | Validate less than or equal to |
+| LenEq | Validate len equality |
+| LenGt | Validate len greater than |
+| LenGte | Validate len greater than or equal to |
+| LenLt | Validate len less than |
+| LenLte | Validate len less than or equal to |
+| OneOf | Validate in list of elements |
+| NotOneOf | Validate not in list of elements |
+| Deref | Validate inner value of pointer |
+| PrefixMessage | Prefix error message |
+| CustomMessage | Replace error with custom message |
