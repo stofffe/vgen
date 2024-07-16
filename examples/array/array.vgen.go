@@ -4,7 +4,7 @@
 //
 package main
 import (
-	"github.com/stofffe/vgen"
+	vgen "github.com/stofffe/vgen"
 )
 type ArrayVgen struct {
 	vector *[]int

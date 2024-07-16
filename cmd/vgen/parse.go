@@ -14,7 +14,7 @@ const includeTag = "vgen"
 type ParseInfo struct {
 	Package     string
 	StructTypes []StructType
-	Imports     []string
+	Imports     map[string]string
 }
 
 type StructType struct {
@@ -29,12 +29,17 @@ type StructField struct {
 	Alias   string
 	Nested  bool
 	Pointer bool
+	Import  string
 }
 
 func (s StructField) Type() string {
 	var builder strings.Builder
 	if s.Pointer {
 		builder.WriteByte('*')
+	}
+	if s.Import != "" {
+		builder.WriteString(s.Import)
+		builder.WriteByte('.')
 	}
 	for _, t := range s.Types {
 		builder.WriteString(t.Type())
@@ -51,21 +56,24 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, fmt.Errorf("could not parse file: %v", err)
 	}
 
-	// traverse tree
-	var fileErr error
+	var traverseErr error
 	var structTypes []StructType
+	importMap := make(map[string]string)
+
+	// traverse tree
 	ast.Inspect(file, func(n ast.Node) bool {
 		node, ok := n.(*ast.GenDecl)
 		if !ok {
 			return true
 		}
 
+		// type
 		if node.Tok == token.TYPE {
 			// Check for tag
 			comment := node.Doc.Text()
 			typeTags, err := parseTypeTags(comment)
 			if err != nil {
-				fileErr = fmt.Errorf("could not parse type tags: %v", err)
+				traverseErr = fmt.Errorf("could not parse type tags: %v", err)
 				return false
 			}
 			if !typeTags.include {
@@ -75,7 +83,7 @@ func parseFile(path string) (ParseInfo, error) {
 			// Parse type
 			parsedTypes, err := parseType(node)
 			if err != nil {
-				fileErr = fmt.Errorf("could not parse type: %v", err)
+				traverseErr = fmt.Errorf("could not parse type: %v", err)
 				return false
 			}
 			for _, s := range parsedTypes {
@@ -83,24 +91,56 @@ func parseFile(path string) (ParseInfo, error) {
 			}
 		}
 
+		// imports
 		if node.Tok == token.IMPORT {
-			// fmt.Println("imports", node)
+			for _, spec := range node.Specs {
+				importSpec, ok := spec.(*ast.ImportSpec)
+				if !ok {
+					traverseErr = fmt.Errorf("invalid import spec %T", spec)
+					return false
+				}
+				path := importSpec.Path.Value
+				path = strings.TrimPrefix(path, `"`)
+				path = strings.TrimSuffix(path, `"`)
+				name := ""
+				if importSpec.Name != nil {
+					// custom name
+					name = importSpec.Name.Name
+				} else {
+					// strip last
+					split := strings.Split(path, "/")
+					name = split[len(split)-1]
+				}
+
+				// remove quotes
+				importMap[name] = path
+			}
 		}
 
 		return true
 	})
-	if fileErr != nil {
-		return ParseInfo{}, fileErr
+	if traverseErr != nil {
+		return ParseInfo{}, traverseErr
+	}
+
+	// Save all imports used in vgen type fields
+	imports := map[string]string{
+		"vgen": "github.com/stofffe/vgen",
+	}
+	for _, typ := range structTypes {
+		for _, field := range typ.Fields {
+			if field.Import == "" {
+				continue
+			}
+			imports[field.Import] = importMap[field.Import]
+		}
 	}
 
 	packageName := file.Name.Name
-
 	return ParseInfo{
 		Package:     packageName,
 		StructTypes: structTypes,
-		Imports: []string{
-			"github.com/stofffe/vgen",
-		},
+		Imports:     imports,
 	}, nil
 }
 
@@ -114,18 +154,21 @@ func parseType(declNode *ast.GenDecl) ([]StructType, error) {
 			return []StructType{}, fmt.Errorf("must have name")
 		}
 
-		structNode, ok := typeNode.Type.(*ast.StructType)
-		if !ok {
-			return []StructType{}, fmt.Errorf("unsupported type")
+		switch node := typeNode.Type.(type) {
+		case *ast.StructType:
+			structNode, ok := typeNode.Type.(*ast.StructType)
+			if !ok {
+				return []StructType{}, fmt.Errorf("unsupported type")
+			}
+			name := typeNode.Name.Name
+			structType, err := parseStruct(structNode, name)
+			if err != nil {
+				return []StructType{}, fmt.Errorf("could not parse struct: %v", err)
+			}
+			structs = append(structs, structType)
+		default:
+			return nil, fmt.Errorf("unsupported type %T", node)
 		}
-
-		name := typeNode.Name.Name
-		structType, err := parseStruct(structNode, name)
-		if err != nil {
-			return []StructType{}, fmt.Errorf("could not parse struct: %v", err)
-		}
-
-		structs = append(structs, structType)
 	}
 
 	return structs, nil
@@ -173,6 +216,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		Types:     []FieldType{},
 		Pointer:   false,
 		Primitive: false,
+		Import:    "",
 	}
 	err = fieldTypeInfo.parseFieldType(fieldNode.Type)
 	if err != nil {
@@ -192,6 +236,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 
 		Types:   fieldTypeInfo.Types,
 		Pointer: fieldTypeInfo.Pointer,
+		Import:  fieldTypeInfo.Import,
 	}, nil
 }
 
@@ -211,22 +256,26 @@ type FieldTypeInfo struct {
 	Types     []FieldType
 	Pointer   bool
 	Primitive bool
+	Import    string
 }
 
 func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 	switch node := fieldNode.(type) {
+	// internal primitive/struct
 	case *ast.Ident:
 		if node.Obj == nil {
 			f.Primitive = true
 		}
 		f.Types = append(f.Types, FieldTypeIdent{name: node.Name})
 		return nil
+	// array
 	case *ast.ArrayType:
 		f.Types = append(f.Types, FieldTypeArray{})
 		err := f.parseFieldType(node.Elt)
 		if err != nil {
 			return err
 		}
+	// map
 	case *ast.MapType:
 		f.Types = append(f.Types, FieldTypeMap{})
 		key, ok := node.Key.(*ast.Ident)
@@ -238,6 +287,7 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 		if err != nil {
 			return err
 		}
+	// pointer
 	case *ast.StarExpr:
 		if len(f.Types) > 0 {
 			return fmt.Errorf("pointers not allowed as list or map element")
@@ -247,6 +297,14 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 			return err
 		}
 		f.Pointer = true
+	// import
+	case *ast.SelectorExpr:
+		imp, ok := node.X.(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("import selector is not ast.Ident")
+		}
+		f.Import = imp.Name
+		f.Types = append(f.Types, FieldTypeIdent{name: node.Sel.Name})
 	default:
 		return fmt.Errorf("unsupported field type: %T", fieldNode)
 	}
