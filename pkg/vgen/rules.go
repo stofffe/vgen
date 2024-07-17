@@ -20,6 +20,7 @@ type Rules[T any] struct {
 	Rules    []Rule[T]
 }
 
+// Validate rules with required check
 func (r Rules[T]) Validate(key string, input *T) ErrorMap {
 	var errors ErrorMap
 
@@ -38,12 +39,15 @@ func (r Rules[T]) Validate(key string, input *T) ErrorMap {
 	return errors
 }
 
+// New rules without required check
 func RulesOptional[T any](rules ...Rule[T]) Rules[T] {
 	return Rules[T]{
 		Required: false,
 		Rules:    rules,
 	}
 }
+
+// New rules with required check
 func RulesRequired[T any](rules ...Rule[T]) Rules[T] {
 	return Rules[T]{
 		Required: true,
@@ -297,49 +301,3 @@ func NotOneOf[T comparable](values ...T) RuleFunc[T] {
 		return errors
 	}
 }
-
-// // Currently no distinction between key and value errors
-// func MapKey[T map[string]V, V any](key_rules ...Rule[string]) Rule[map[string]V] {
-// 	return func(key string, input map[string]V) ErrorMap {
-// 		errors := make(ErrorMap)
-// 		for key := range input {
-// 			for _, rule := range key_rules {
-// 				key_err := rule(fmt.Sprintf("%s.%s", key, key), key).Prefix("key: ")
-// 				errors.AddErrors(key_err)
-// 			}
-// 		}
-// 		if len(errors) > 0 {
-// 			return errors
-// 		}
-// 		return nil
-// 	}
-// }
-//
-// func MapKeyValue[V any](key_rules []Rule[string], value_rules []Rule[V]) Rule[map[string]V] {
-// 	return func(key string, input map[string]V) ErrorMap {
-// 		errors := make(ErrorMap)
-// 		for key, value := range input {
-// 			for _, rule := range key_rules {
-// 				key_err := rule(fmt.Sprintf("%s.%s", key, key), key)
-// 				errors.AddErrors(key_err)
-// 			}
-// 			for _, rule := range value_rules {
-// 				value_err := rule(fmt.Sprintf("%s.%s", key, key), value)
-// 				errors.AddErrors(value_err)
-// 			}
-// 		}
-// 		if len(errors) > 0 {
-// 			return errors
-// 		}
-// 		return nil
-// 	}
-// }
-// func PointerNotNil[T *I, I any]() RuleFunc[T] {
-// 	return func(key string, input *T) ErrorMap {
-// 		var errors ErrorMap
-// 		if input == nil || *input == nil {
-// 			errors.AddError(key, fmt.Errorf("must not be null"))
-// 		}
-// 		return errors
-// 	}
-// }

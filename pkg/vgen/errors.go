@@ -6,6 +6,7 @@ import (
 
 type ErrorMap map[string][]error
 
+// Add single error
 func (e *ErrorMap) AddError(key string, err error) {
 	if *e == nil {
 		*e = make(ErrorMap)
@@ -13,6 +14,7 @@ func (e *ErrorMap) AddError(key string, err error) {
 	(*e)[key] = append((*e)[key], err)
 }
 
+// Transfer all errors from one map to another
 func (e *ErrorMap) AddErrors(errors ErrorMap) {
 	if errors == nil {
 		return
@@ -25,6 +27,7 @@ func (e *ErrorMap) AddErrors(errors ErrorMap) {
 	}
 }
 
+// Create ErrorMap with multiple errors
 func NewErrorMap(prefix string, errs ...error) ErrorMap {
 	var errors ErrorMap
 	for _, err := range errs {
@@ -33,6 +36,7 @@ func NewErrorMap(prefix string, errs ...error) ErrorMap {
 	return errors
 }
 
+// Json format a ErrorMap
 func (e ErrorMap) Debug() string {
 	b, _ := json.MarshalIndent(e, "", "  ")
 	return string(b)
