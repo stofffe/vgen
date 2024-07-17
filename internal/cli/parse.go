@@ -49,7 +49,10 @@ func parseFile(path string) (ParseInfo, error) {
 	opts := parser.AllErrors | parser.ParseComments
 	file, err := parser.ParseFile(fset, path, nil, opts)
 	if err != nil {
-		return ParseInfo{}, fmt.Errorf("could not parse file: %v", err)
+		return ParseInfo{}, DetailedError{
+			inner:    fmt.Errorf("could not parse file %v", path),
+			detailed: fmt.Errorf("could not parse file %v: %v", path, err),
+		}
 	}
 
 	var traverseErr error
@@ -69,7 +72,7 @@ func parseFile(path string) (ParseInfo, error) {
 			comment := node.Doc.Text()
 			typeTags, err := parseTypeTags(comment)
 			if err != nil {
-				traverseErr = fmt.Errorf("could not parse type tags: %v", err)
+				traverseErr = NestedDetailedError(err, "type tags")
 				return false
 			}
 			if !typeTags.include {
@@ -79,7 +82,7 @@ func parseFile(path string) (ParseInfo, error) {
 			// Parse type
 			parsedTypes, err := parseType(node)
 			if err != nil {
-				traverseErr = fmt.Errorf("could not parse type: %v", err)
+				traverseErr = NestedDetailedError(err, "type")
 				return false
 			}
 			for _, s := range parsedTypes {
@@ -90,11 +93,12 @@ func parseFile(path string) (ParseInfo, error) {
 		// imports
 		if node.Tok == token.IMPORT {
 			for _, spec := range node.Specs {
-				importSpec, ok := spec.(*ast.ImportSpec)
+				importSpec, _ := spec.(*ast.ImportSpec)
 				if !ok {
-					traverseErr = fmt.Errorf("invalid import spec %T", spec)
+					traverseErr = NewInternalError(fmt.Errorf("invalid import spec %T", spec))
 					return false
 				}
+
 				path := importSpec.Path.Value
 				path = strings.TrimPrefix(path, `"`)
 				path = strings.TrimSuffix(path, `"`)
@@ -147,23 +151,27 @@ func parseType(declNode *ast.GenDecl) ([]StructType, error) {
 
 		// check name
 		if typeNode.Name == nil {
-			return []StructType{}, fmt.Errorf("must have name")
+			return []StructType{}, DetailedError{
+				inner:    fmt.Errorf("all parsed types must have a name"),
+				detailed: fmt.Errorf("must have name"),
+			}
 		}
 
 		switch node := typeNode.Type.(type) {
 		case *ast.StructType:
-			structNode, ok := typeNode.Type.(*ast.StructType)
-			if !ok {
-				return []StructType{}, fmt.Errorf("unsupported type")
-			}
 			name := typeNode.Name.Name
-			structType, err := parseStruct(structNode, name)
+			structType, err := parseStruct(node, name)
 			if err != nil {
-				return []StructType{}, fmt.Errorf("could not parse struct: %v", err)
+				return []StructType{}, NestedDetailedError(err, "struct")
 			}
 			structs = append(structs, structType)
+		case *ast.Ident:
+			return nil, DetailedError{
+				inner:    fmt.Errorf("type aliases not supported"),
+				detailed: fmt.Errorf("type aliases not supported"),
+			}
 		default:
-			return nil, fmt.Errorf("unsupported type %T", node)
+			return nil, NewInternalError(fmt.Errorf("unsupported type %T", node))
 		}
 	}
 
@@ -179,7 +187,7 @@ func parseStruct(structNode *ast.StructType, structName string) (StructType, err
 	for _, fieldNode := range structNode.Fields.List {
 		field, err := parseField(fieldNode)
 		if err != nil {
-			return StructType{}, fmt.Errorf("could not parse field: %v", err)
+			return StructType{}, NestedDetailedError(err, "field")
 		}
 		structType.Fields = append(structType.Fields, field)
 	}
@@ -199,7 +207,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 	// parse tags
 	commentTags, err := parseFieldTags(comments)
 	if err != nil {
-		return StructField{}, fmt.Errorf("could not parse field tags: %v", err)
+		return StructField{}, NestedDetailedError(err, "field tags")
 	}
 	nested := commentTags.include
 	alias := fieldName
@@ -216,12 +224,15 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 	}
 	err = fieldTypeInfo.parseFieldType(fieldNode.Type)
 	if err != nil {
-		return StructField{}, fmt.Errorf("could not parse field type: %v", err)
+		return StructField{}, NestedDetailedError(err, "field type")
 	}
 
 	// Dont allow nested on primitve types
 	if nested && fieldTypeInfo.Primitive {
-		return StructField{}, fmt.Errorf("nested not allowed on primitve inner type")
+		return StructField{}, DetailedError{
+			inner:    fmt.Errorf("primitve fields can not have nested tag"),
+			detailed: fmt.Errorf("nested not allowed on primitve inner type"),
+		}
 	}
 
 	return StructField{
@@ -268,30 +279,35 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 			f.Primitive = true
 		}
 		f.Types = append(f.Types, FieldTypeIdent{name: node.Name})
-		return nil
 	// array
 	case *ast.ArrayType:
 		f.Types = append(f.Types, FieldTypeArray{})
 		err := f.parseFieldType(node.Elt)
 		if err != nil {
-			return err
+			return NestedDetailedError(err, "array")
 		}
 	// map
 	case *ast.MapType:
 		f.Types = append(f.Types, FieldTypeMap{})
 		key, ok := node.Key.(*ast.Ident)
 		if !ok || key.Name != "string" {
-			return fmt.Errorf("invalid map key %v, must be string", key)
+			return DetailedError{
+				inner:    fmt.Errorf("key of map must be a string"),
+				detailed: fmt.Errorf("invalid map key %v, must be string", key),
+			}
 		}
 
 		err := f.parseFieldType(node.Value)
 		if err != nil {
-			return err
+			return NestedDetailedError(err, "map field")
 		}
 	// pointer
 	case *ast.StarExpr:
 		if len(f.Types) > 0 {
-			return fmt.Errorf("pointers not allowed as list or map element")
+			return DetailedError{
+				inner:    fmt.Errorf("pointers not allowed as list/map element"),
+				detailed: fmt.Errorf("pointers not allowed as list/map element"),
+			}
 		}
 		err := f.parseFieldType(node.X)
 		if err != nil {
@@ -302,12 +318,12 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 	case *ast.SelectorExpr:
 		imp, ok := node.X.(*ast.Ident)
 		if !ok {
-			return fmt.Errorf("import selector is not ast.Ident")
+			return NewInternalError(fmt.Errorf("import selector is not ast.Ident"))
 		}
 		f.Import = imp.Name
 		f.Types = append(f.Types, FieldTypeImport{imp: imp.Name, name: node.Sel.Name})
 	default:
-		return fmt.Errorf("unsupported field type: %T", fieldNode)
+		return NewInternalError(fmt.Errorf("unknown field type %T", fieldNode))
 	}
 	return nil
 }
@@ -344,12 +360,18 @@ func parseFieldTags(comment string) (FieldTags, error) {
 			tags.include = true
 		case "alias":
 			if len(split) < 2 || split[1] == "" {
-				return FieldTags{}, fmt.Errorf("name must have second argument")
+				return FieldTags{}, DetailedError{
+					inner:    fmt.Errorf(`field tag alias must have a value, ex: "alias=something"`),
+					detailed: fmt.Errorf("alias must have second argument"),
+				}
 			}
 			name := split[1]
 			tags.alias = name
 		default:
-			return FieldTags{}, fmt.Errorf("unknown tag %v", ident)
+			return FieldTags{}, DetailedError{
+				inner:    fmt.Errorf("unknown field tag %v", ident),
+				detailed: fmt.Errorf("unknown field tag %v", ident),
+			}
 		}
 	}
 	return tags, nil
@@ -384,8 +406,53 @@ func parseTypeTags(comment string) (TypeTags, error) {
 		case "include", "i":
 			tags.include = true
 		default:
-			return TypeTags{}, fmt.Errorf("unknown type tag %v", ident)
+			return TypeTags{}, DetailedError{
+				inner:    fmt.Errorf("unknown type tag %v", ident),
+				detailed: fmt.Errorf("unknown type tag %v", ident),
+			}
 		}
 	}
 	return tags, nil
+}
+
+type DetailedError struct {
+	inner    error
+	detailed error
+	file     string
+}
+
+func (e DetailedError) AddFile(file string) DetailedError {
+	e.file = file
+	return e
+}
+
+func NewInternalError(err error) DetailedError {
+	return DetailedError{
+		inner:    fmt.Errorf("internal error"),
+		detailed: err,
+		file:     "",
+	}
+}
+
+func NestedDetailedError(err error, trace string) DetailedError {
+	if a, ok := err.(DetailedError); ok {
+		return DetailedError{
+			inner:    a.inner,
+			detailed: fmt.Errorf("%s: %s", trace, a.detailed),
+		}
+	}
+	return DetailedError{
+		inner:    err,
+		detailed: fmt.Errorf("%s: %s", trace, err),
+	}
+}
+
+func (e DetailedError) Error() string {
+	var builder strings.Builder
+	if e.file != "" {
+		builder.WriteString(e.file)
+		builder.WriteString(": ")
+	}
+	builder.WriteString(e.inner.Error())
+	return builder.String()
 }

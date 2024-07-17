@@ -39,55 +39,54 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		},
 	}).Parse(templateStr)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse template: %v", err)
+		return nil, NewInternalError(fmt.Errorf("could not parse template: %v", err))
 	}
 
 	// package
 	err = tmpl.ExecuteTemplate(&buffer, "package", info)
 	if err != nil {
-		return nil, fmt.Errorf("could not execute template package: %v", err)
+		return nil, NewInternalError(fmt.Errorf("could not execute template package: %v", err))
 	}
 
 	for _, structType := range info.StructTypes {
 		// struct type
 		err = tmpl.ExecuteTemplate(&buffer, "structType", structType)
 		if err != nil {
-			return nil, fmt.Errorf("could not execute template structType: %v", err)
+			return nil, NewInternalError(fmt.Errorf("could not execute template structType: %v", err))
 		}
 
 		// validation
 		err = tmpl.ExecuteTemplate(&buffer, "validation", structType)
 		if err != nil {
-			return nil, fmt.Errorf("could not execute template validation: %v", err)
+			return nil, NewInternalError(fmt.Errorf("could not execute template validation: %v", err))
 		}
 
 		// rule type
 		err = tmpl.ExecuteTemplate(&buffer, "ruleType", structType)
 		if err != nil {
-			return nil, fmt.Errorf("could not execute template ruleType: %v", err)
+			return nil, NewInternalError(fmt.Errorf("could not execute template ruleType: %v", err))
 		}
 
 		// convert
 		err = tmpl.ExecuteTemplate(&buffer, "convert", structType)
 		if err != nil {
-			return nil, fmt.Errorf("could not execute template convert: %v", err)
+			return nil, NewInternalError(fmt.Errorf("could not execute template convert: %v", err))
 		}
 
 		// validated convert
 		err = tmpl.ExecuteTemplate(&buffer, "validatedConvert", structType)
 		if err != nil {
-			return nil, fmt.Errorf("could not execute template validatedConvert: %v", err)
+			return nil, NewInternalError(fmt.Errorf("could not execute template validatedConvert: %v", err))
 		}
 
 	}
 
 	bytes := buffer.Bytes()
-	// fmt.Println(string(bytes))
 
 	// Format
 	bytes, err = format.Source(buffer.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("could not format generated file")
+		return nil, NewInternalError(fmt.Errorf("could not format generated file"))
 	}
 
 	// Remove all empty lines

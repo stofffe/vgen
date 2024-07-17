@@ -127,7 +127,7 @@ func clean(args []string, recursive, verbose bool) {
 }
 
 func generate(args []string, recursive, verbose bool) {
-	errors := []string{}
+	errors := []DetailedError{}
 	warnings := []string{}
 
 	// get files to be parsed
@@ -135,7 +135,11 @@ func generate(args []string, recursive, verbose bool) {
 	for _, path := range args {
 		path_info, err := os.Stat(path)
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("could not open file info for %s", path))
+			errors = append(errors, DetailedError{
+				inner:    fmt.Errorf("could not open file"),
+				detailed: fmt.Errorf("could not open file info"),
+				file:     path,
+			})
 			continue
 		}
 
@@ -149,7 +153,7 @@ func generate(args []string, recursive, verbose bool) {
 		filepath.Walk(path, func(current_path string, info os.FileInfo, err error) error {
 			// file tree traversal errors
 			if err != nil {
-				errors = append(errors, fmt.Sprintf("error walking file tree: %v", err))
+				errors = append(errors, NewInternalError(fmt.Errorf("could not walk file tree: %v", err)).AddFile(path))
 				return nil
 			}
 
@@ -174,7 +178,7 @@ func generate(args []string, recursive, verbose bool) {
 
 	// parse files concurrently
 	wg := sync.WaitGroup{}
-	errc := make(chan string, len(paths))
+	errc := make(chan DetailedError, len(paths))
 	warnc := make(chan string, len(paths))
 	genc := make(chan GeneratedFile, len(paths))
 	for _, path := range paths {
@@ -184,11 +188,11 @@ func generate(args []string, recursive, verbose bool) {
 			defer wg.Done()
 			n, err := handleFile(p)
 			if err != nil {
-				errc <- fmt.Sprintf("could not generate for file %s: %v", p, err)
+				errc <- NestedDetailedError(err, fmt.Sprintf("could not handle file")).AddFile(p)
 				return
 			}
 			if n == 0 {
-				warnc <- fmt.Sprintf("%s: no parseable types", p)
+				warnc <- fmt.Sprintf("no parseable types")
 				return
 			}
 			genc <- GeneratedFile{
@@ -210,7 +214,7 @@ func generate(args []string, recursive, verbose bool) {
 		}
 		fmt.Printf("errors: %d\n", len(errors))
 		for _, e := range errors {
-			fmt.Println(e)
+			fmt.Printf("%s\n", e)
 		}
 
 		// warnings
@@ -219,7 +223,7 @@ func generate(args []string, recursive, verbose bool) {
 		}
 		fmt.Printf("warnings: %d\n", len(warnings))
 		for _, w := range warnings {
-			fmt.Println(w)
+			fmt.Printf("%s\n", w)
 		}
 
 		// generated files
@@ -243,24 +247,25 @@ func handleFile(path string) (int, error) {
 	// parse file
 	info, err := parseFile(path)
 	if err != nil {
-		return 0, fmt.Errorf("could not parse file: %v", err)
+		return 0, NestedDetailedError(err, "%s: could not parse file").AddFile(path)
 	}
 
 	// generate vgen file from info
 	buffer, err := generateFile(info)
 	if err != nil {
-		return 0, fmt.Errorf("could not generate file: %v", err)
+		return 0, NestedDetailedError(err, "could not generate file").AddFile(path)
 	}
 
 	// write new file
 	fileName := strings.Replace(path, ".go", suffix, 1)
 	file, err := os.Create(fileName)
 	if err != nil {
-		return 0, fmt.Errorf("could not create file %v", fileName)
+		return 0, NewInternalError(fmt.Errorf("could not create file %s: %v", fileName, err)).AddFile(path)
 	}
 	_, err = file.Write(buffer)
 	if err != nil {
-		return 0, fmt.Errorf("could not write to file %v", fileName)
+		return 0, NewInternalError(fmt.Errorf("could not write to file %v", fileName)).AddFile(path)
+
 	}
 
 	return len(info.StructTypes), nil
