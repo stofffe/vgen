@@ -57,21 +57,43 @@ func CreateCommands() {
 	}
 }
 
+type CleanedFileInfo struct {
+	path string
+}
+type CleanedFileError struct {
+	path string
+	err  DetailedError
+}
+
+func (c CleanedFileInfo) Format() string {
+	return fmt.Sprintf("%s: removed", c.path)
+}
+func (c CleanedFileError) Format() string {
+	return fmt.Sprintf("%s: %s", c.path, c.err.detailed)
+}
+
 func clean(args []string, recursive, verbose bool) {
-	errors := []string{}
-	removed := []string{}
+	errors := []CleanedFileError{}
+	removed := []CleanedFileInfo{}
 	paths := []string{}
 
 	// get files to be removed
 	for _, path := range args {
-		path_info, err := os.Stat(path)
+		path := path
+		pathInfo, err := os.Stat(path)
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("could not open file info for %s", path))
+			errors = append(errors, CleanedFileError{
+				path: path,
+				err: DetailedError{
+					inner:    fmt.Errorf("could not open file %s", path),
+					detailed: fmt.Errorf("could not open file info for %s", path),
+				},
+			})
 			continue
 		}
 
 		// parse single file
-		if !path_info.IsDir() {
+		if !pathInfo.IsDir() {
 			paths = append(paths, path)
 			continue
 		}
@@ -80,7 +102,10 @@ func clean(args []string, recursive, verbose bool) {
 		filepath.Walk(path, func(current_path string, info os.FileInfo, err error) error {
 			// file tree traversal errors
 			if err != nil {
-				errors = append(errors, fmt.Sprintf("error walking file tree: %v", err))
+				errors = append(errors, CleanedFileError{
+					path: path,
+					err:  NewInternalError(fmt.Errorf("error walking file tree: %v", err)),
+				})
 				return nil
 			}
 
@@ -104,11 +129,17 @@ func clean(args []string, recursive, verbose bool) {
 
 	// remove files
 	for _, path := range paths {
+		path := path
 		err := os.Remove(path)
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("could not remove file %s: %v", path, err))
+			errors = append(errors, CleanedFileError{
+				path: path,
+				err:  NewInternalError(fmt.Errorf("could not remove file %s: %v", path, err)),
+			})
 		} else {
-			removed = append(removed, path)
+			removed = append(removed, CleanedFileInfo{
+				path: path,
+			})
 		}
 	}
 
@@ -116,35 +147,65 @@ func clean(args []string, recursive, verbose bool) {
 	if verbose {
 		fmt.Printf("errors: %d\n", len(errors))
 		for _, e := range errors {
-			fmt.Println(e)
+			fmt.Printf("\t%s\n", e.Format())
 		}
 
-		fmt.Printf("removed files: %d\n", len(removed))
-		for _, path := range removed {
-			fmt.Printf("%s: removed\n", path)
+		fmt.Printf("info: %d\n", len(removed))
+		for _, r := range removed {
+			fmt.Printf("\t%s\n", r.Format())
 		}
 	}
 }
 
+type GeneratedFileInfo struct {
+	path      string
+	typeCount int
+}
+type GeneratedFileWarning struct {
+	warning string
+	path    string
+}
+type GeneratedFileError struct {
+	path string
+	err  DetailedError
+}
+
+func (g GeneratedFileInfo) Format() string {
+	return fmt.Sprintf("\t%s: parsed %d types", g.path, g.typeCount)
+}
+func (g GeneratedFileWarning) Format() string {
+	return fmt.Sprintf("\t%s: %s", g.path, g.warning)
+}
+func (g GeneratedFileError) Format(detailed bool) string {
+	if detailed {
+		return fmt.Sprintf("\t%s: %s", g.path, g.err.detailed)
+	} else {
+		return fmt.Sprintf("\t%s: %s", g.path, g.err.inner)
+	}
+}
+
 func generate(args []string, recursive, verbose bool) {
-	errors := []DetailedError{}
-	warnings := []string{}
+	errors := []GeneratedFileError{}
+	warnings := []GeneratedFileWarning{}
+	info := []GeneratedFileInfo{}
 
 	// get files to be parsed
 	paths := []string{}
 	for _, path := range args {
-		path_info, err := os.Stat(path)
+		fileInfo, err := os.Stat(path)
 		if err != nil {
-			errors = append(errors, DetailedError{
-				inner:    fmt.Errorf("could not open file"),
-				detailed: fmt.Errorf("could not open file info"),
-				file:     path,
+			errors = append(errors, GeneratedFileError{
+				path: path,
+				err: DetailedError{
+					inner:    fmt.Errorf("could not open file"),
+					detailed: fmt.Errorf("could not open file info"),
+				},
 			})
 			continue
 		}
 
 		// parse single file
-		if !path_info.IsDir() {
+		if !fileInfo.IsDir() {
 			paths = append(paths, path)
 			continue
 		}
@@ -153,7 +214,10 @@ func generate(args []string, recursive, verbose bool) {
 		filepath.Walk(path, func(current_path string, info os.FileInfo, err error) error {
 			// file tree traversal errors
 			if err != nil {
-				errors = append(errors, NewInternalError(fmt.Errorf("could not walk file tree: %v", err)).AddFile(path))
+				errors = append(errors, GeneratedFileError{
+					path: path,
+					err:  NewInternalError(fmt.Errorf("could not walk file tree: %v", err)),
+				})
 				return nil
 			}
 
@@ -178,93 +242,91 @@ func generate(args []string, recursive, verbose bool) {
 
 	// parse files concurrently
 	wg := sync.WaitGroup{}
-	errc := make(chan DetailedError, len(paths))
-	warnc := make(chan string, len(paths))
-	genc := make(chan GeneratedFile, len(paths))
+	errorc := make(chan GeneratedFileError, len(paths))
+	warnc := make(chan GeneratedFileWarning, len(paths))
+	infoc := make(chan GeneratedFileInfo, len(paths))
 	for _, path := range paths {
-		p := path // TODO fixed in 1.22?
+		path := path // TODO fixed in 1.22?
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			n, err := handleFile(p)
+			n, err := handleFile(path)
 			if err != nil {
-				errc <- NestedDetailedError(err, fmt.Sprintf("could not handle file")).AddFile(p)
+				errorc <- GeneratedFileError{
+					path: path,
+					err:  NewDetailedError(err, fmt.Sprintf("could not handle file")),
+				}
+
 				return
 			}
 			if n == 0 {
-				warnc <- fmt.Sprintf("no parseable types")
+				warnc <- GeneratedFileWarning{
+					warning: "no parseable types",
+					path:    path,
+				}
 				return
 			}
-			genc <- GeneratedFile{
-				path:      p,
+			infoc <- GeneratedFileInfo{
+				path:      path,
 				typeCount: n,
 			}
 		}()
 	}
 	wg.Wait()
-	close(errc)
-	close(genc)
+	close(errorc)
+	close(infoc)
 	close(warnc)
 
 	// verbose logging
 	if verbose {
-		// errors
-		for e := range errc {
+		for e := range errorc {
 			errors = append(errors, e)
 		}
-		fmt.Printf("errors: %d\n", len(errors))
-		for _, e := range errors {
-			fmt.Printf("%s\n", e)
-		}
-
-		// warnings
 		for w := range warnc {
 			warnings = append(warnings, w)
 		}
+		for i := range infoc {
+			info = append(info, i)
+		}
+
+		// log
+		fmt.Printf("errors: %d\n", len(errors))
+		for _, e := range errors {
+			fmt.Println(e.Format(true))
+		}
 		fmt.Printf("warnings: %d\n", len(warnings))
 		for _, w := range warnings {
-			fmt.Printf("%s\n", w)
+			fmt.Println(w.Format())
 		}
-
-		// generated files
-		files := []GeneratedFile{}
-		for path := range genc {
-			files = append(files, path)
-		}
-		fmt.Printf("generated files: %d\n", len(files))
-		for _, file := range files {
-			fmt.Printf("%s: parsed %d types\n", file.path, file.typeCount)
+		fmt.Printf("info: %d\n", len(info))
+		for _, info := range info {
+			fmt.Println(info.Format())
 		}
 	}
-}
-
-type GeneratedFile struct {
-	path      string
-	typeCount int
 }
 
 func handleFile(path string) (int, error) {
 	// parse file
 	info, err := parseFile(path)
 	if err != nil {
-		return 0, NestedDetailedError(err, "%s: could not parse file").AddFile(path)
+		return 0, NewDetailedError(err, "%s: could not parse file")
 	}
 
 	// generate vgen file from info
 	buffer, err := generateFile(info)
 	if err != nil {
-		return 0, NestedDetailedError(err, "could not generate file").AddFile(path)
+		return 0, NewDetailedError(err, "could not generate file")
 	}
 
 	// write new file
 	fileName := strings.Replace(path, ".go", suffix, 1)
 	file, err := os.Create(fileName)
 	if err != nil {
-		return 0, NewInternalError(fmt.Errorf("could not create file %s: %v", fileName, err)).AddFile(path)
+		return 0, NewInternalError(fmt.Errorf("could not create file %s: %v", fileName, err))
 	}
 	_, err = file.Write(buffer)
 	if err != nil {
-		return 0, NewInternalError(fmt.Errorf("could not write to file %v", fileName)).AddFile(path)
+		return 0, NewInternalError(fmt.Errorf("could not write to file %v", fileName))
 
 	}
 

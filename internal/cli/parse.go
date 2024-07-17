@@ -72,7 +72,7 @@ func parseFile(path string) (ParseInfo, error) {
 			comment := node.Doc.Text()
 			typeTags, err := parseTypeTags(comment)
 			if err != nil {
-				traverseErr = NestedDetailedError(err, "type tags")
+				traverseErr = NewDetailedError(err, "type tags")
 				return false
 			}
 			if !typeTags.include {
@@ -82,7 +82,7 @@ func parseFile(path string) (ParseInfo, error) {
 			// Parse type
 			parsedTypes, err := parseType(node)
 			if err != nil {
-				traverseErr = NestedDetailedError(err, "type")
+				traverseErr = NewDetailedError(err, "type")
 				return false
 			}
 			for _, s := range parsedTypes {
@@ -162,7 +162,7 @@ func parseType(declNode *ast.GenDecl) ([]StructType, error) {
 			name := typeNode.Name.Name
 			structType, err := parseStruct(node, name)
 			if err != nil {
-				return []StructType{}, NestedDetailedError(err, "struct")
+				return []StructType{}, NewDetailedError(err, "struct")
 			}
 			structs = append(structs, structType)
 		case *ast.Ident:
@@ -187,7 +187,7 @@ func parseStruct(structNode *ast.StructType, structName string) (StructType, err
 	for _, fieldNode := range structNode.Fields.List {
 		field, err := parseField(fieldNode)
 		if err != nil {
-			return StructType{}, NestedDetailedError(err, "field")
+			return StructType{}, NewDetailedError(err, "field")
 		}
 		structType.Fields = append(structType.Fields, field)
 	}
@@ -207,7 +207,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 	// parse tags
 	commentTags, err := parseFieldTags(comments)
 	if err != nil {
-		return StructField{}, NestedDetailedError(err, "field tags")
+		return StructField{}, NewDetailedError(err, "field tags")
 	}
 	nested := commentTags.include
 	alias := fieldName
@@ -224,7 +224,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 	}
 	err = fieldTypeInfo.parseFieldType(fieldNode.Type)
 	if err != nil {
-		return StructField{}, NestedDetailedError(err, "field type")
+		return StructField{}, NewDetailedError(err, "field type")
 	}
 
 	// Dont allow nested on primitve types
@@ -284,7 +284,7 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 		f.Types = append(f.Types, FieldTypeArray{})
 		err := f.parseFieldType(node.Elt)
 		if err != nil {
-			return NestedDetailedError(err, "array")
+			return NewDetailedError(err, "array")
 		}
 	// map
 	case *ast.MapType:
@@ -299,7 +299,7 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 
 		err := f.parseFieldType(node.Value)
 		if err != nil {
-			return NestedDetailedError(err, "map field")
+			return NewDetailedError(err, "map field")
 		}
 	// pointer
 	case *ast.StarExpr:
@@ -413,46 +413,4 @@ func parseTypeTags(comment string) (TypeTags, error) {
 		}
 	}
 	return tags, nil
-}
-
-type DetailedError struct {
-	inner    error
-	detailed error
-	file     string
-}
-
-func (e DetailedError) AddFile(file string) DetailedError {
-	e.file = file
-	return e
-}
-
-func NewInternalError(err error) DetailedError {
-	return DetailedError{
-		inner:    fmt.Errorf("internal error"),
-		detailed: err,
-		file:     "",
-	}
-}
-
-func NestedDetailedError(err error, trace string) DetailedError {
-	if a, ok := err.(DetailedError); ok {
-		return DetailedError{
-			inner:    a.inner,
-			detailed: fmt.Errorf("%s: %s", trace, a.detailed),
-		}
-	}
-	return DetailedError{
-		inner:    err,
-		detailed: fmt.Errorf("%s: %s", trace, err),
-	}
-}
-
-func (e DetailedError) Error() string {
-	var builder strings.Builder
-	if e.file != "" {
-		builder.WriteString(e.file)
-		builder.WriteString(": ")
-	}
-	builder.WriteString(e.inner.Error())
-	return builder.String()
 }
