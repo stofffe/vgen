@@ -25,31 +25,29 @@ func CreateCommands() {
 	}
 
 	// generate
-	var genRecursive, genVerbose bool
+	var genVerbose bool
 	generateCmd := &cobra.Command{
 		Use:   "generate",
 		Short: "generate from exsisting go files",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			generate(args, genRecursive, genVerbose)
+			generate(args, genVerbose)
 		},
 	}
-	generateCmd.Flags().BoolVarP(&genRecursive, "recursive", "r", false, "recursively parse specified paths")
-	generateCmd.Flags().BoolVarP(&genVerbose, "verbose", "v", false, "output more detailed information")
+	generateCmd.Flags().BoolVarP(&genVerbose, "verbose", "v", false, "output verbose errors")
 	rootCmd.AddCommand(generateCmd)
 
 	// clean
-	var cleanRecursive, cleanVerbose bool
+	var cleanVerbose bool
 	cleanCmd := &cobra.Command{
 		Use:   "clean",
 		Short: "clean exsisting vgen files",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			clean(args, cleanRecursive, cleanVerbose)
+			clean(args, cleanVerbose)
 		},
 	}
-	cleanCmd.Flags().BoolVarP(&cleanRecursive, "recursive", "r", false, "recursively clean specified paths")
-	cleanCmd.Flags().BoolVarP(&cleanVerbose, "verbose", "v", false, "output more detailed information")
+	cleanCmd.Flags().BoolVarP(&cleanVerbose, "verbose", "v", false, "output verbose errors")
 	rootCmd.AddCommand(cleanCmd)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -60,21 +58,33 @@ func CreateCommands() {
 type CleanedFileInfo struct {
 	path string
 }
+type CleanedFileWarning struct {
+	path    string
+	warning string
+}
 type CleanedFileError struct {
 	path string
 	err  DetailedError
 }
 
 func (c CleanedFileInfo) Format() string {
-	return fmt.Sprintf("%s: removed", c.path)
+	return fmt.Sprintf("[INFO] %s: removed", c.path)
 }
-func (c CleanedFileError) Format() string {
-	return fmt.Sprintf("%s: %s", c.path, c.err.detailed)
+func (c CleanedFileWarning) Format() string {
+	return fmt.Sprintf("[WARNING] %s: %s", c.path, c.warning)
+}
+func (c CleanedFileError) Format(detailed bool) string {
+	if detailed {
+		return fmt.Sprintf("[ERROR] %s: %s", c.path, c.err.detailed)
+	} else {
+		return fmt.Sprintf("[ERROR] %s: %s", c.path, c.err.inner)
+	}
 }
 
-func clean(args []string, recursive, verbose bool) {
+func clean(args []string, verbose bool) {
 	errors := []CleanedFileError{}
-	removed := []CleanedFileInfo{}
+	warnings := []CleanedFileWarning{}
+	infos := []CleanedFileInfo{}
 	paths := []string{}
 
 	// get files to be removed
@@ -92,7 +102,6 @@ func clean(args []string, recursive, verbose bool) {
 			continue
 		}
 
-		// parse single file
 		if !pathInfo.IsDir() {
 			paths = append(paths, path)
 			continue
@@ -109,13 +118,9 @@ func clean(args []string, recursive, verbose bool) {
 				return nil
 			}
 
-			// recursive check
+			// dont parse folders
 			if info.IsDir() {
-				if !recursive && current_path != path {
-					return filepath.SkipDir
-				} else {
-					return nil
-				}
+				return nil
 			}
 
 			// add vgen files
@@ -137,23 +142,21 @@ func clean(args []string, recursive, verbose bool) {
 				err:  NewInternalError(fmt.Errorf("could not remove file %s: %v", path, err)),
 			})
 		} else {
-			removed = append(removed, CleanedFileInfo{
+			infos = append(infos, CleanedFileInfo{
 				path: path,
 			})
 		}
 	}
 
-	// verbose logging
-	if verbose {
-		fmt.Printf("errors: %d\n", len(errors))
-		for _, e := range errors {
-			fmt.Printf("\t%s\n", e.Format())
-		}
-
-		fmt.Printf("info: %d\n", len(removed))
-		for _, r := range removed {
-			fmt.Printf("\t%s\n", r.Format())
-		}
+	// logging
+	for _, e := range errors {
+		fmt.Println(e.Format(verbose))
+	}
+	for _, w := range warnings {
+		fmt.Println(w.Format())
+	}
+	for _, r := range infos {
+		fmt.Println(r.Format())
 	}
 }
 
@@ -171,20 +174,20 @@ type GeneratedFileError struct {
 }
 
 func (g GeneratedFileInfo) Format() string {
-	return fmt.Sprintf("\t%s: parsed %d types", g.path, g.typeCount)
+	return fmt.Sprintf("[INFO] %s: parsed %d types", g.path, g.typeCount)
 }
 func (g GeneratedFileWarning) Format() string {
-	return fmt.Sprintf("\t%s: %s", g.path, g.warning)
+	return fmt.Sprintf("[WARNING] %s: %s", g.path, g.warning)
 }
 func (g GeneratedFileError) Format(detailed bool) string {
 	if detailed {
-		return fmt.Sprintf("\t%s: %s", g.path, g.err.detailed)
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err.detailed)
 	} else {
-		return fmt.Sprintf("\t%s: %s", g.path, g.err.inner)
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err.inner)
 	}
 }
 
-func generate(args []string, recursive, verbose bool) {
+func generate(args []string, verbose bool) {
 	errors := []GeneratedFileError{}
 	warnings := []GeneratedFileWarning{}
 	info := []GeneratedFileInfo{}
@@ -221,13 +224,9 @@ func generate(args []string, recursive, verbose bool) {
 				return nil
 			}
 
-			// recursive check
+			// dont parse folders
 			if info.IsDir() {
-				if !recursive && current_path != path {
-					return filepath.SkipDir
-				} else {
-					return nil
-				}
+				return nil
 			}
 
 			// skip generated files
@@ -277,31 +276,25 @@ func generate(args []string, recursive, verbose bool) {
 	close(infoc)
 	close(warnc)
 
-	// verbose logging
-	if verbose {
-		for e := range errorc {
-			errors = append(errors, e)
-		}
-		for w := range warnc {
-			warnings = append(warnings, w)
-		}
-		for i := range infoc {
-			info = append(info, i)
-		}
+	for e := range errorc {
+		errors = append(errors, e)
+	}
+	for w := range warnc {
+		warnings = append(warnings, w)
+	}
+	for i := range infoc {
+		info = append(info, i)
+	}
 
-		// log
-		fmt.Printf("errors: %d\n", len(errors))
-		for _, e := range errors {
-			fmt.Println(e.Format(true))
-		}
-		fmt.Printf("warnings: %d\n", len(warnings))
-		for _, w := range warnings {
-			fmt.Println(w.Format())
-		}
-		fmt.Printf("info: %d\n", len(info))
-		for _, info := range info {
-			fmt.Println(info.Format())
-		}
+	// logging
+	for _, e := range errors {
+		fmt.Println(e.Format(verbose))
+	}
+	for _, w := range warnings {
+		fmt.Println(w.Format())
+	}
+	for _, info := range info {
+		fmt.Println(info.Format())
 	}
 }
 
