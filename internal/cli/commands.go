@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -64,7 +65,7 @@ type CleanedFileWarning struct {
 }
 type CleanedFileError struct {
 	path string
-	err  DetailedError
+	err  error
 }
 
 func (c CleanedFileInfo) Format() string {
@@ -73,11 +74,16 @@ func (c CleanedFileInfo) Format() string {
 func (c CleanedFileWarning) Format() string {
 	return fmt.Sprintf("[WARNING] %s: %s", c.path, c.warning)
 }
-func (c CleanedFileError) Format(detailed bool) string {
+func (g CleanedFileError) Format(detailed bool) string {
 	if detailed {
-		return fmt.Sprintf("[ERROR] %s: %s", c.path, c.err.detailed)
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err)
+	}
+
+	var detailedErr DetailedError
+	if errors.As(g.err, &detailedErr) {
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.msg)
 	} else {
-		return fmt.Sprintf("[ERROR] %s: %s", c.path, c.err.inner)
+		return fmt.Sprintf("[ERROR] %s: internal error (use -v flag for more information)", g.path)
 	}
 }
 
@@ -95,8 +101,8 @@ func clean(args []string, verbose bool) {
 			errors = append(errors, CleanedFileError{
 				path: path,
 				err: DetailedError{
-					inner:    fmt.Errorf("could not open file %s", path),
-					detailed: fmt.Errorf("could not open file info for %s", path),
+					msg: "could not open file",
+					err: fmt.Errorf("open file info for %s", path),
 				},
 			})
 			continue
@@ -113,7 +119,7 @@ func clean(args []string, verbose bool) {
 			if err != nil {
 				errors = append(errors, CleanedFileError{
 					path: path,
-					err:  NewInternalError(fmt.Errorf("error walking file tree: %v", err)),
+					err:  fmt.Errorf("error walking file tree: %v", err),
 				})
 				return nil
 			}
@@ -139,7 +145,7 @@ func clean(args []string, verbose bool) {
 		if err != nil {
 			errors = append(errors, CleanedFileError{
 				path: path,
-				err:  NewInternalError(fmt.Errorf("could not remove file %s: %v", path, err)),
+				err:  fmt.Errorf("remove file %s: %v", path, err),
 			})
 		} else {
 			infos = append(infos, CleanedFileInfo{
@@ -170,7 +176,7 @@ type GeneratedFileWarning struct {
 }
 type GeneratedFileError struct {
 	path string
-	err  DetailedError
+	err  error
 }
 
 func (g GeneratedFileInfo) Format() string {
@@ -181,9 +187,14 @@ func (g GeneratedFileWarning) Format() string {
 }
 func (g GeneratedFileError) Format(detailed bool) string {
 	if detailed {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err.detailed)
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err)
+	}
+
+	var detailedErr DetailedError
+	if errors.As(g.err, &detailedErr) {
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.msg)
 	} else {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err.inner)
+		return fmt.Sprintf("[ERROR] %s: internal error (use -v flag for more information)", g.path)
 	}
 }
 
@@ -200,8 +211,8 @@ func generate(args []string, verbose bool) {
 			errors = append(errors, GeneratedFileError{
 				path: path,
 				err: DetailedError{
-					inner:    fmt.Errorf("could not open file"),
-					detailed: fmt.Errorf("could not open file info"),
+					msg: "could not open file",
+					err: fmt.Errorf("open file info"),
 				},
 			})
 			continue
@@ -219,7 +230,7 @@ func generate(args []string, verbose bool) {
 			if err != nil {
 				errors = append(errors, GeneratedFileError{
 					path: path,
-					err:  NewInternalError(fmt.Errorf("could not walk file tree: %v", err)),
+					err:  fmt.Errorf("walk file tree: %w", err),
 				})
 				return nil
 			}
@@ -253,7 +264,7 @@ func generate(args []string, verbose bool) {
 			if err != nil {
 				errorc <- GeneratedFileError{
 					path: path,
-					err:  NewDetailedError(err, fmt.Sprintf("could not handle file")),
+					err:  fmt.Errorf("handle file: %w", err),
 				}
 
 				return
@@ -302,24 +313,24 @@ func handleFile(path string) (int, error) {
 	// parse file
 	info, err := parseFile(path)
 	if err != nil {
-		return 0, NewDetailedError(err, "%s: could not parse file")
+		return 0, fmt.Errorf("parse file: %w", err)
 	}
 
 	// generate vgen file from info
 	buffer, err := generateFile(info)
 	if err != nil {
-		return 0, NewDetailedError(err, "could not generate file")
+		return 0, fmt.Errorf("generate file: %w", err)
 	}
 
 	// write new file
 	fileName := strings.Replace(path, ".go", suffix, 1)
 	file, err := os.Create(fileName)
 	if err != nil {
-		return 0, NewInternalError(fmt.Errorf("could not create file %s: %v", fileName, err))
+		return 0, fmt.Errorf("create file: %w", err)
 	}
 	_, err = file.Write(buffer)
 	if err != nil {
-		return 0, NewInternalError(fmt.Errorf("could not write to file %v", fileName))
+		return 0, fmt.Errorf("write to file: %w", err)
 
 	}
 

@@ -10,7 +10,7 @@ import (
 // vgen(include)
 type Person struct {
 	name     string
-	nickname string
+	nickname string // vgen(asda)
 	age      int
 }
 
