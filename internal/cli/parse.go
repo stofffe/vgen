@@ -6,11 +6,14 @@ import (
 	"go/parser"
 	"go/token"
 	"regexp"
+	"slices"
 	"strings"
 )
 
 type Parser struct {
-	path string
+	path         string
+	lastPos      int
+	foundImports []string
 }
 
 const includeTag = "vgen"
@@ -49,7 +52,8 @@ func (s StructField) Type() string {
 
 func parseFile(path string) (ParseInfo, error) {
 	p := Parser{
-		path: path,
+		path:    path,
+		lastPos: 0,
 	}
 
 	// load file
@@ -60,84 +64,43 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, fmt.Errorf("parse file: %w", err)
 	}
 
-	var traverseErr error
+	// types
 	var structTypes []StructType
-	importMap := make(map[string]string)
-
-	// traverse tree
-	ast.Inspect(file, func(n ast.Node) bool {
-		node, ok := n.(*ast.GenDecl)
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok {
-			return true
+			continue
 		}
-
-		// type
-		if node.Tok == token.TYPE {
-			// Check for tag
-			comment := node.Doc.Text()
-			typeTags, err := p.parseTypeTags(comment)
+		for _, spec := range genDecl.Specs {
+			spec, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+			structType, err := p.parseType(spec)
 			if err != nil {
-				traverseErr = fmt.Errorf("parse type tags: %w", err)
-				return false
+				return ParseInfo{}, fmt.Errorf("parse type: %w", err)
 			}
-			if !typeTags.include {
-				return false
-			}
-
-			// Parse type
-			parsedTypes, err := p.parseType(node)
-			if err != nil {
-				traverseErr = fmt.Errorf("parse type: %w", err)
-				return false
-			}
-			for _, s := range parsedTypes {
-				structTypes = append(structTypes, s)
-			}
+			structTypes = append(structTypes, structType)
 		}
-
-		// imports
-		if node.Tok == token.IMPORT {
-			for _, spec := range node.Specs {
-				importSpec, _ := spec.(*ast.ImportSpec)
-				if !ok {
-					traverseErr = fmt.Errorf("invalid import spec %T", spec)
-					return false
-				}
-
-				path := importSpec.Path.Value
-				path = strings.TrimPrefix(path, `"`)
-				path = strings.TrimSuffix(path, `"`)
-				name := ""
-				if importSpec.Name != nil {
-					// custom name
-					name = importSpec.Name.Name
-				} else {
-					// strip last
-					split := strings.Split(path, "/")
-					name = split[len(split)-1]
-				}
-
-				// remove quotes
-				importMap[name] = path
-			}
-		}
-
-		return true
-	})
-	if traverseErr != nil {
-		return ParseInfo{}, traverseErr
 	}
 
-	// Save all imports used in vgen type fields
+	// import
 	imports := map[string]string{
 		"vgen": "github.com/stofffe/vgen/pkg/vgen",
 	}
-	for _, typ := range structTypes {
-		for _, field := range typ.Fields {
-			if field.Import == "" {
-				continue
-			}
-			imports[field.Import] = importMap[field.Import]
+	for _, spec := range file.Imports {
+		path := spec.Path.Value
+		path = strings.TrimPrefix(path, `"`)
+		path = strings.TrimSuffix(path, `"`)
+		split := strings.Split(path, "/")
+		name := split[len(split)-1]
+		// custom name
+		if spec.Name != nil {
+			name = spec.Name.Name
+		}
+
+		if slices.Contains(p.foundImports, name) {
+			imports[name] = path
 		}
 	}
 
@@ -149,38 +112,31 @@ func parseFile(path string) (ParseInfo, error) {
 	}, nil
 }
 
-func (p *Parser) parseType(declNode *ast.GenDecl) ([]StructType, error) {
-	var structs []StructType
-	for _, spec := range declNode.Specs {
-		typeNode := spec.(*ast.TypeSpec)
-
-		// check name
-		if typeNode.Name == nil {
-			return []StructType{}, DetailedError{
-				msg: "parsed types must have a name",
-				err: fmt.Errorf("must have name"),
-			}
-		}
-
-		switch node := typeNode.Type.(type) {
-		case *ast.StructType:
-			name := typeNode.Name.Name
-			structType, err := p.parseStruct(node, name)
-			if err != nil {
-				return []StructType{}, fmt.Errorf("prase struct: %w", err)
-			}
-			structs = append(structs, structType)
-		case *ast.Ident:
-			return nil, DetailedError{
-				msg: "type aliases not supported",
-				err: fmt.Errorf("type aliases not supported"),
-			}
-		default:
-			return nil, fmt.Errorf("unsupported type %T", node)
+func (p *Parser) parseType(spec *ast.TypeSpec) (StructType, error) {
+	// check name
+	if spec.Name == nil {
+		return StructType{}, DetailedError{
+			msg: "parsed types must have a name",
+			err: fmt.Errorf("must have name"),
 		}
 	}
 
-	return structs, nil
+	switch node := spec.Type.(type) {
+	case *ast.StructType:
+		name := spec.Name.Name
+		structType, err := p.parseStruct(node, name)
+		if err != nil {
+			return StructType{}, fmt.Errorf("prase struct: %w", err)
+		}
+		return structType, nil
+	case *ast.Ident:
+		return StructType{}, DetailedError{
+			msg: "type aliases not supported",
+			err: fmt.Errorf("type aliases not supported"),
+		}
+	default:
+		return StructType{}, fmt.Errorf("unsupported type %T", node)
+	}
 }
 
 func (p *Parser) parseStruct(structNode *ast.StructType, structName string) (StructType, error) {
@@ -325,6 +281,7 @@ func (p *Parser) parseFieldType(f *FieldTypeInfo, fieldNode ast.Expr) error {
 		if !ok {
 			return fmt.Errorf("import selector is not ast.Ident")
 		}
+		p.foundImports = append(p.foundImports, imp.Name)
 		f.Import = imp.Name
 		f.Types = append(f.Types, FieldTypeImport{imp: imp.Name, name: node.Sel.Name})
 	default:
