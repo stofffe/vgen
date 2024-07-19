@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -56,41 +55,10 @@ func CreateCommands() {
 	}
 }
 
-type CleanedFileInfo struct {
-	path string
-}
-type CleanedFileWarning struct {
-	path    string
-	warning string
-}
-type CleanedFileError struct {
-	path string
-	err  error
-}
-
-func (c CleanedFileInfo) Format() string {
-	return fmt.Sprintf("[INFO] %s: removed", c.path)
-}
-func (c CleanedFileWarning) Format() string {
-	return fmt.Sprintf("[WARNING] %s: %s", c.path, c.warning)
-}
-func (g CleanedFileError) Format(detailed bool) string {
-	var detailedErr DetailedError
-	if !errors.As(g.err, &detailedErr) {
-		return fmt.Sprintf("[ERROR] %s: internal error (use -v flag for more information)", g.path)
-	}
-
-	if detailed {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.err)
-	} else {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.msg)
-	}
-}
-
 func clean(args []string, verbose bool) {
-	errors := []CleanedFileError{}
-	warnings := []CleanedFileWarning{}
-	infos := []CleanedFileInfo{}
+	errors := []ErrorMessage{}
+	warnings := []WarningMessage{}
+	infos := []InfoMessage{}
 	paths := []string{}
 
 	// get files to be removed
@@ -98,7 +66,7 @@ func clean(args []string, verbose bool) {
 		path := path
 		pathInfo, err := os.Stat(path)
 		if err != nil {
-			errors = append(errors, CleanedFileError{
+			errors = append(errors, ErrorMessage{
 				path: path,
 				err: DetailedError{
 					msg: "could not open file",
@@ -117,7 +85,7 @@ func clean(args []string, verbose bool) {
 		filepath.Walk(path, func(current_path string, info os.FileInfo, err error) error {
 			// file tree traversal errors
 			if err != nil {
-				errors = append(errors, CleanedFileError{
+				errors = append(errors, ErrorMessage{
 					path: path,
 					err:  fmt.Errorf("error walking file tree: %v", err),
 				})
@@ -138,17 +106,24 @@ func clean(args []string, verbose bool) {
 		})
 	}
 
+	if len(paths) == 0 {
+		warnings = append(warnings, WarningMessage{
+			msg: "no files found",
+		})
+	}
+
 	// remove files
 	for _, path := range paths {
 		path := path
 		err := os.Remove(path)
 		if err != nil {
-			errors = append(errors, CleanedFileError{
+			errors = append(errors, ErrorMessage{
 				path: path,
-				err:  fmt.Errorf("remove file %s: %v", path, err),
+				err:  fmt.Errorf("remove file: %v", err),
 			})
 		} else {
-			infos = append(infos, CleanedFileInfo{
+			infos = append(infos, InfoMessage{
+				msg:  "removed file",
 				path: path,
 			})
 		}
@@ -239,18 +214,18 @@ func generate(args []string, verbose bool) {
 			}
 			if n == 0 {
 				warnc <- WarningMessage{
-					warning: "no parseable types",
-					path:    path,
+					msg:  "no parseable types",
+					path: path,
 				}
 				return
 			} else if n == 1 {
 				infoc <- InfoMessage{
-					info: fmt.Sprintf("parsed 1 type"),
+					msg:  fmt.Sprintf("parsed 1 type"),
 					path: path,
 				}
 			} else {
 				infoc <- InfoMessage{
-					info: fmt.Sprintf("parsed %d types", n),
+					msg:  fmt.Sprintf("parsed %d types", n),
 					path: path,
 				}
 			}

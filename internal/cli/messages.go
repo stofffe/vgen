@@ -7,21 +7,37 @@ import (
 )
 
 type InfoMessage struct {
+	msg  string
 	path string
-	info string
 }
 
 func (g InfoMessage) Format() string {
-	return fmt.Sprintf("[INFO] %s: %s", g.path, g.info)
+	var builder strings.Builder
+	builder.WriteString("[INFO]")
+	if g.path != "" {
+		builder.WriteString(" ")
+		builder.WriteString(g.path)
+	}
+	builder.WriteString(": ")
+	builder.WriteString(g.msg)
+	return builder.String()
 }
 
 type WarningMessage struct {
-	warning string
-	path    string
+	msg  string
+	path string
 }
 
 func (g WarningMessage) Format() string {
-	return fmt.Sprintf("[WARNING] %s: %s", g.path, g.warning)
+	var builder strings.Builder
+	builder.WriteString("[WARNING]")
+	if g.path != "" {
+		builder.WriteString(" ")
+		builder.WriteString(g.path)
+	}
+	builder.WriteString(": ")
+	builder.WriteString(g.msg)
+	return builder.String()
 }
 
 type ErrorMessage struct {
@@ -31,12 +47,17 @@ type ErrorMessage struct {
 
 func (g ErrorMessage) Format(detailed bool) string {
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("[ERROR] %s", g.path))
+	builder.WriteString("[ERROR]")
+	if g.path != "" {
+		builder.WriteString(" ")
+		builder.WriteString(g.path)
+	}
 
 	var derr DetailedError
 	if errors.As(g.err, &derr) {
 		if derr.line != nil {
-			builder.WriteString(fmt.Sprintf(" line %d", *derr.line))
+			builder.WriteString(" ")
+			builder.WriteString(fmt.Sprintf("line %d", *derr.line))
 		}
 		builder.WriteString(": ")
 		if detailed {
