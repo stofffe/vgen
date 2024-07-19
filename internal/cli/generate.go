@@ -19,7 +19,7 @@ func generateFile(info ParseInfo) ([]byte, error) {
 	tmpl, err := template.New("template").Funcs(template.FuncMap{
 		"iter": func(count int) []int {
 			var Items []int
-			for i := range count {
+			for i := 0; i < count; i++ {
 				Items = append(Items, i)
 			}
 			return Items
