@@ -224,7 +224,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		return StructField{}, fmt.Errorf("field type: %w", err)
 	}
 
-	// Dont allow nested on primitve types
+	// dont allow nested on primitve types
 	if nested && fieldTypeInfo.Primitive {
 		return StructField{}, DetailedError{
 			msg: "primitve fields can not have nested tag",
@@ -348,6 +348,13 @@ func parseFieldTags(comment string) (FieldTags, error) {
 	match = strings.TrimSuffix(match, ")")
 	args := strings.Split(match, ",")
 
+	if len(args) == 1 && args[0] == "" {
+		return FieldTags{}, DetailedError{
+			msg: "field tags can not be empty",
+			err: fmt.Errorf("field tag empty"),
+		}
+	}
+
 	for _, arg := range args {
 		arg = strings.TrimSpace(arg)
 		split := strings.Split(arg, "=")
@@ -394,6 +401,13 @@ func parseTypeTags(comment string) (TypeTags, error) {
 	match = strings.TrimPrefix(match, "vgen(")
 	match = strings.TrimSuffix(match, ")")
 	args := strings.Split(match, ",")
+
+	if len(args) == 1 && args[0] == "" {
+		return TypeTags{}, DetailedError{
+			msg: "type tags can not be empty",
+			err: fmt.Errorf("type tag empty"),
+		}
+	}
 
 	for _, arg := range args {
 		arg = strings.TrimSpace(arg)
