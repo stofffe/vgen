@@ -35,8 +35,8 @@ func (g ErrorMessage) Format(detailed bool) string {
 
 	var derr DetailedError
 	if errors.As(g.err, &derr) {
-		if derr.pos != nil {
-			builder.WriteString(fmt.Sprintf(" line %d", *derr.pos))
+		if derr.line != nil {
+			builder.WriteString(fmt.Sprintf(" line %d", *derr.line))
 		}
 		builder.WriteString(": ")
 		if detailed {
@@ -56,9 +56,9 @@ func (g ErrorMessage) Format(detailed bool) string {
 }
 
 type DetailedError struct {
-	msg string
-	err error
-	pos *int
+	msg  string
+	err  error
+	line *int
 }
 
 func (e DetailedError) Error() string {

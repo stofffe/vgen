@@ -10,13 +10,22 @@ import (
 	"strings"
 )
 
+const includeTag = "vgen"
+
 type Parser struct {
-	path         string
-	lastPos      int
+	lastPos      token.Pos
 	foundImports []string
+	fset         *token.FileSet
 }
 
-const includeTag = "vgen"
+func (p *Parser) SetPos(node ast.Node) {
+	p.lastPos = node.Pos()
+}
+
+func (p Parser) CurrentLine() *int {
+	line := p.fset.Position(p.lastPos).Line
+	return &line
+}
 
 type ParseInfo struct {
 	Package     string
@@ -51,11 +60,6 @@ func (s StructField) Type() string {
 }
 
 func parseFile(path string) (ParseInfo, error) {
-	p := Parser{
-		path:    path,
-		lastPos: 0,
-	}
-
 	// load file
 	fset := token.NewFileSet()
 	opts := parser.AllErrors | parser.ParseComments
@@ -64,18 +68,36 @@ func parseFile(path string) (ParseInfo, error) {
 		return ParseInfo{}, fmt.Errorf("parse file: %w", err)
 	}
 
+	p := Parser{
+		fset:         fset,
+		lastPos:      file.Pos(),
+		foundImports: []string{},
+	}
+
 	// types
 	var structTypes []StructType
 	for _, decl := range file.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
-		if !ok {
+		if !ok || genDecl.Tok != token.TYPE {
 			continue
 		}
+
+		// parse tags and check for include
+		typeTags, err := p.parseTypeTags(genDecl)
+		if err != nil {
+			return ParseInfo{}, fmt.Errorf("parse type tags: %w", err)
+		}
+		if !typeTags.include {
+			continue
+		}
+
+		// parse types
 		for _, spec := range genDecl.Specs {
 			spec, ok := spec.(*ast.TypeSpec)
 			if !ok {
 				continue
 			}
+
 			structType, err := p.parseType(spec)
 			if err != nil {
 				return ParseInfo{}, fmt.Errorf("parse type: %w", err)
@@ -113,11 +135,13 @@ func parseFile(path string) (ParseInfo, error) {
 }
 
 func (p *Parser) parseType(spec *ast.TypeSpec) (StructType, error) {
+	p.SetPos(spec)
 	// check name
 	if spec.Name == nil {
 		return StructType{}, DetailedError{
-			msg: "parsed types must have a name",
-			err: fmt.Errorf("must have name"),
+			line: p.CurrentLine(),
+			msg:  "parsed types must have a name",
+			err:  fmt.Errorf("must have name"),
 		}
 	}
 
@@ -131,8 +155,9 @@ func (p *Parser) parseType(spec *ast.TypeSpec) (StructType, error) {
 		return structType, nil
 	case *ast.Ident:
 		return StructType{}, DetailedError{
-			msg: "type aliases not supported",
-			err: fmt.Errorf("type aliases not supported"),
+			line: p.CurrentLine(),
+			msg:  "type aliases not supported",
+			err:  fmt.Errorf("type aliases not supported"),
 		}
 	default:
 		return StructType{}, fmt.Errorf("unsupported type %T", node)
@@ -140,6 +165,7 @@ func (p *Parser) parseType(spec *ast.TypeSpec) (StructType, error) {
 }
 
 func (p *Parser) parseStruct(structNode *ast.StructType, structName string) (StructType, error) {
+	p.SetPos(structNode)
 	structType := StructType{
 		Name:   structName,
 		Fields: []StructField{},
@@ -157,6 +183,7 @@ func (p *Parser) parseStruct(structNode *ast.StructType, structName string) (Str
 }
 
 func (p *Parser) parseField(fieldNode *ast.Field) (StructField, error) {
+	p.SetPos(fieldNode)
 	comments := fieldNode.Doc.Text() + fieldNode.Comment.Text()
 
 	fieldName := fieldNode.Names[0].Name // TODO handle multiple
@@ -185,8 +212,9 @@ func (p *Parser) parseField(fieldNode *ast.Field) (StructField, error) {
 	// dont allow nested on primitve types
 	if nested && fieldInfo.Primitive {
 		return StructField{}, DetailedError{
-			msg: "primitve fields can not have nested tag",
-			err: fmt.Errorf("nested not allowed on primitve inner type"),
+			line: p.CurrentLine(),
+			msg:  "primitve fields can not have nested tag",
+			err:  fmt.Errorf("nested not allowed on primitve inner type"),
 		}
 	}
 
@@ -263,8 +291,9 @@ func (p *Parser) parseFieldType(node ast.Expr) (FieldTypeInfo, error) {
 			key, ok := node.Key.(*ast.Ident)
 			if !ok || key.Name != "string" {
 				return FieldTypeInfo{}, DetailedError{
-					msg: "key of map must be a string",
-					err: fmt.Errorf("invalid map key %v, must be string", key),
+					line: p.CurrentLine(),
+					msg:  "key of map must be a string",
+					err:  fmt.Errorf("invalid map key %v, must be string", key),
 				}
 			}
 			currentNode = node.Value
@@ -272,8 +301,9 @@ func (p *Parser) parseFieldType(node ast.Expr) (FieldTypeInfo, error) {
 		case *ast.StarExpr:
 			if len(info.Types) > 0 {
 				return FieldTypeInfo{}, DetailedError{
-					msg: "pointers not allowed as list/map element",
-					err: fmt.Errorf("pointers not allowed as list/map element"),
+					line: p.CurrentLine(),
+					msg:  "pointers not allowed as list/map element",
+					err:  fmt.Errorf("pointers not allowed as list/map element"),
 				}
 			}
 			info.Pointer = true
@@ -309,8 +339,9 @@ func (p *Parser) parseFieldTags(comment string) (FieldTags, error) {
 
 	if len(args) == 1 && args[0] == "" {
 		return FieldTags{}, DetailedError{
-			msg: "field tags can not be empty",
-			err: fmt.Errorf("field tag empty"),
+			line: p.CurrentLine(),
+			msg:  "field tags can not be empty",
+			err:  fmt.Errorf("field tag empty"),
 		}
 	}
 
@@ -324,16 +355,18 @@ func (p *Parser) parseFieldTags(comment string) (FieldTags, error) {
 		case "alias":
 			if len(split) < 2 || split[1] == "" {
 				return FieldTags{}, DetailedError{
-					msg: `field tag alias must have a value, ex: "alias=something"`,
-					err: fmt.Errorf("alias must have second argument"),
+					line: p.CurrentLine(),
+					msg:  `field tag alias must have a value, ex: "alias=something"`,
+					err:  fmt.Errorf("alias must have second argument"),
 				}
 			}
 			name := split[1]
 			tags.alias = name
 		default:
 			return FieldTags{}, DetailedError{
-				msg: fmt.Sprintf("unknown field tag %v", ident),
-				err: fmt.Errorf("unknown field tag %v", ident),
+				line: p.CurrentLine(),
+				msg:  fmt.Sprintf("unknown field tag %v", ident),
+				err:  fmt.Errorf("unknown field tag %v", ident),
 			}
 		}
 	}
@@ -344,7 +377,10 @@ type TypeTags struct {
 	include bool
 }
 
-func (p *Parser) parseTypeTags(comment string) (TypeTags, error) {
+func (p *Parser) parseTypeTags(genDecl *ast.GenDecl) (TypeTags, error) {
+	p.SetPos(genDecl)
+
+	comment := genDecl.Doc.Text()
 	// default tags
 	tags := TypeTags{
 		include: false,
@@ -363,8 +399,9 @@ func (p *Parser) parseTypeTags(comment string) (TypeTags, error) {
 
 	if len(args) == 1 && args[0] == "" {
 		return TypeTags{}, DetailedError{
-			msg: "type tags can not be empty",
-			err: fmt.Errorf("type tag empty"),
+			line: p.CurrentLine(),
+			msg:  "type tags can not be empty",
+			err:  fmt.Errorf("type tag empty"),
 		}
 	}
 
@@ -377,8 +414,9 @@ func (p *Parser) parseTypeTags(comment string) (TypeTags, error) {
 			tags.include = true
 		default:
 			return TypeTags{}, DetailedError{
-				msg: fmt.Sprintf("unknown type tag %s", ident),
-				err: fmt.Errorf("unknown type tag %s", ident),
+				line: p.CurrentLine(),
+				msg:  fmt.Sprintf("unknown type tag %s", ident),
+				err:  fmt.Errorf("unknown type tag %s", ident),
 			}
 		}
 	}
