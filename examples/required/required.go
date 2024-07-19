@@ -23,13 +23,13 @@ func main() {
 	}
 
 	rules := PersonRules{
-		name: vgen.RulesRequired(
+		name: vgen.RulesRequired[string](
 			vgen.Eq("bob"),
 		),
-		nickname: vgen.RulesOptional(
+		nickname: vgen.RulesOptional[string](
 			vgen.Eq("bobby"),
 		),
-		age: vgen.RulesOptional(
+		age: vgen.RulesOptional[int](
 			vgen.Gte(18),
 		),
 	}

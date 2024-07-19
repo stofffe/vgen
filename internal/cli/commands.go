@@ -211,7 +211,7 @@ func generate(args []string, verbose bool) {
 	warnc := make(chan WarningMessage, len(paths))
 	infoc := make(chan InfoMessage, len(paths))
 	for _, path := range paths {
-		path := path // TODO fixed in 1.22?
+		path := path // avoid value being captured by goroutine
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

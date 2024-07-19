@@ -22,8 +22,8 @@ func main() {
 
 	rules := PersonRules{
 		Name: vgen.RulesRequired[*string](),
-		Nickname: vgen.RulesOptional(
-			vgen.Deref(
+		Nickname: vgen.RulesOptional[*string](
+			vgen.Deref[string](
 				vgen.NotOneOf("bob", "bobby"),
 			),
 		),

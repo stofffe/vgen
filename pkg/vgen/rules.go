@@ -3,7 +3,8 @@ package vgen
 import (
 	"cmp"
 	"fmt"
-	"slices"
+
+	"github.com/stofffe/vgen/internal/utils"
 )
 
 //
@@ -284,7 +285,7 @@ func LenLte[T []V, V any](value int) RuleFunc[T] {
 func OneOf[T comparable](values ...T) RuleFunc[T] {
 	return func(key string, input T) ErrorMap {
 		var errors ErrorMap
-		if !slices.Contains(values, input) {
+		if !utils.Contains(values, input) {
 			errors.AddError(key, fmt.Errorf("must be one of %v", values))
 		}
 		return errors
@@ -295,7 +296,7 @@ func OneOf[T comparable](values ...T) RuleFunc[T] {
 func NotOneOf[T comparable](values ...T) RuleFunc[T] {
 	return func(key string, input T) ErrorMap {
 		var errors ErrorMap
-		if slices.Contains(values, input) {
+		if utils.Contains(values, input) {
 			errors.AddError(key, fmt.Errorf("must not be one of %v", values))
 		}
 		return errors

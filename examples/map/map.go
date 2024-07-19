@@ -21,11 +21,11 @@ func main() {
 	}
 
 	rules := CharacterRules{
-		stats: vgen.RulesOptional(
+		stats: vgen.RulesOptional[map[string]int](
 			vgen.MapHasKey[map[string]int]("speed"),
 			vgen.MapHasKey[map[string]int]("strength"),
 			vgen.MapHasKey[map[string]int]("intelligence"),
-			vgen.MapValue(
+			vgen.MapValue[int](
 				vgen.Lt(100),
 			),
 		),
