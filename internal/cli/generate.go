@@ -78,7 +78,6 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("execute template validatedConvert: %v", err)
 		}
-
 	}
 
 	bytes := buffer.Bytes()

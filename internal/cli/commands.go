@@ -75,15 +75,15 @@ func (c CleanedFileWarning) Format() string {
 	return fmt.Sprintf("[WARNING] %s: %s", c.path, c.warning)
 }
 func (g CleanedFileError) Format(detailed bool) string {
-	if detailed {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err)
+	var detailedErr DetailedError
+	if !errors.As(g.err, &detailedErr) {
+		return fmt.Sprintf("[ERROR] %s: internal error (use -v flag for more information)", g.path)
 	}
 
-	var detailedErr DetailedError
-	if errors.As(g.err, &detailedErr) {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.msg)
+	if detailed {
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.err)
 	} else {
-		return fmt.Sprintf("[ERROR] %s: internal error (use -v flag for more information)", g.path)
+		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.msg)
 	}
 }
 
@@ -166,49 +166,17 @@ func clean(args []string, verbose bool) {
 	}
 }
 
-type GeneratedFileInfo struct {
-	path      string
-	typeCount int
-}
-type GeneratedFileWarning struct {
-	warning string
-	path    string
-}
-type GeneratedFileError struct {
-	path string
-	err  error
-}
-
-func (g GeneratedFileInfo) Format() string {
-	return fmt.Sprintf("[INFO] %s: parsed %d types", g.path, g.typeCount)
-}
-func (g GeneratedFileWarning) Format() string {
-	return fmt.Sprintf("[WARNING] %s: %s", g.path, g.warning)
-}
-func (g GeneratedFileError) Format(detailed bool) string {
-	if detailed {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, g.err)
-	}
-
-	var detailedErr DetailedError
-	if errors.As(g.err, &detailedErr) {
-		return fmt.Sprintf("[ERROR] %s: %s", g.path, detailedErr.msg)
-	} else {
-		return fmt.Sprintf("[ERROR] %s: internal error (use -v flag for more information)", g.path)
-	}
-}
-
 func generate(args []string, verbose bool) {
-	errors := []GeneratedFileError{}
-	warnings := []GeneratedFileWarning{}
-	info := []GeneratedFileInfo{}
+	errors := []ErrorMessage{}
+	warnings := []WarningMessage{}
+	info := []InfoMessage{}
 
 	// get files to be parsed
 	paths := []string{}
 	for _, path := range args {
 		fileInfo, err := os.Stat(path)
 		if err != nil {
-			errors = append(errors, GeneratedFileError{
+			errors = append(errors, ErrorMessage{
 				path: path,
 				err: DetailedError{
 					msg: "could not open file",
@@ -228,7 +196,7 @@ func generate(args []string, verbose bool) {
 		filepath.Walk(path, func(current_path string, info os.FileInfo, err error) error {
 			// file tree traversal errors
 			if err != nil {
-				errors = append(errors, GeneratedFileError{
+				errors = append(errors, ErrorMessage{
 					path: path,
 					err:  fmt.Errorf("walk file tree: %w", err),
 				})
@@ -252,9 +220,9 @@ func generate(args []string, verbose bool) {
 
 	// parse files concurrently
 	wg := sync.WaitGroup{}
-	errorc := make(chan GeneratedFileError, len(paths))
-	warnc := make(chan GeneratedFileWarning, len(paths))
-	infoc := make(chan GeneratedFileInfo, len(paths))
+	errorc := make(chan ErrorMessage, len(paths))
+	warnc := make(chan WarningMessage, len(paths))
+	infoc := make(chan InfoMessage, len(paths))
 	for _, path := range paths {
 		path := path // TODO fixed in 1.22?
 		wg.Add(1)
@@ -262,23 +230,29 @@ func generate(args []string, verbose bool) {
 			defer wg.Done()
 			n, err := handleFile(path)
 			if err != nil {
-				errorc <- GeneratedFileError{
-					path: path,
+				errorc <- ErrorMessage{
 					err:  fmt.Errorf("handle file: %w", err),
+					path: path,
 				}
 
 				return
 			}
 			if n == 0 {
-				warnc <- GeneratedFileWarning{
+				warnc <- WarningMessage{
 					warning: "no parseable types",
 					path:    path,
 				}
 				return
-			}
-			infoc <- GeneratedFileInfo{
-				path:      path,
-				typeCount: n,
+			} else if n == 1 {
+				infoc <- InfoMessage{
+					info: fmt.Sprintf("parsed 1 type"),
+					path: path,
+				}
+			} else {
+				infoc <- InfoMessage{
+					info: fmt.Sprintf("parsed %d types", n),
+					path: path,
+				}
 			}
 		}()
 	}
@@ -331,7 +305,6 @@ func handleFile(path string) (int, error) {
 	_, err = file.Write(buffer)
 	if err != nil {
 		return 0, fmt.Errorf("write to file: %w", err)
-
 	}
 
 	return len(info.StructTypes), nil

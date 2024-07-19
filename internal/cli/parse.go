@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+type Parser struct {
+	path string
+}
+
 const includeTag = "vgen"
 
 type ParseInfo struct {
@@ -44,6 +48,10 @@ func (s StructField) Type() string {
 }
 
 func parseFile(path string) (ParseInfo, error) {
+	p := Parser{
+		path: path,
+	}
+
 	// load file
 	fset := token.NewFileSet()
 	opts := parser.AllErrors | parser.ParseComments
@@ -67,7 +75,7 @@ func parseFile(path string) (ParseInfo, error) {
 		if node.Tok == token.TYPE {
 			// Check for tag
 			comment := node.Doc.Text()
-			typeTags, err := parseTypeTags(comment)
+			typeTags, err := p.parseTypeTags(comment)
 			if err != nil {
 				traverseErr = fmt.Errorf("parse type tags: %w", err)
 				return false
@@ -77,7 +85,7 @@ func parseFile(path string) (ParseInfo, error) {
 			}
 
 			// Parse type
-			parsedTypes, err := parseType(node)
+			parsedTypes, err := p.parseType(node)
 			if err != nil {
 				traverseErr = fmt.Errorf("parse type: %w", err)
 				return false
@@ -141,7 +149,7 @@ func parseFile(path string) (ParseInfo, error) {
 	}, nil
 }
 
-func parseType(declNode *ast.GenDecl) ([]StructType, error) {
+func (p *Parser) parseType(declNode *ast.GenDecl) ([]StructType, error) {
 	var structs []StructType
 	for _, spec := range declNode.Specs {
 		typeNode := spec.(*ast.TypeSpec)
@@ -157,7 +165,7 @@ func parseType(declNode *ast.GenDecl) ([]StructType, error) {
 		switch node := typeNode.Type.(type) {
 		case *ast.StructType:
 			name := typeNode.Name.Name
-			structType, err := parseStruct(node, name)
+			structType, err := p.parseStruct(node, name)
 			if err != nil {
 				return []StructType{}, fmt.Errorf("prase struct: %w", err)
 			}
@@ -175,14 +183,14 @@ func parseType(declNode *ast.GenDecl) ([]StructType, error) {
 	return structs, nil
 }
 
-func parseStruct(structNode *ast.StructType, structName string) (StructType, error) {
+func (p *Parser) parseStruct(structNode *ast.StructType, structName string) (StructType, error) {
 	structType := StructType{
 		Name:   structName,
 		Fields: []StructField{},
 	}
 
 	for _, fieldNode := range structNode.Fields.List {
-		field, err := parseField(fieldNode)
+		field, err := p.parseField(fieldNode)
 		if err != nil {
 			return StructType{}, fmt.Errorf("parse field: %w", err)
 		}
@@ -192,7 +200,7 @@ func parseStruct(structNode *ast.StructType, structName string) (StructType, err
 	return structType, nil
 }
 
-func parseField(fieldNode *ast.Field) (StructField, error) {
+func (p *Parser) parseField(fieldNode *ast.Field) (StructField, error) {
 	comments := fieldNode.Doc.Text() + fieldNode.Comment.Text()
 
 	fieldName := fieldNode.Names[0].Name // TODO handle multiple
@@ -202,7 +210,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 	}
 
 	// parse tags
-	commentTags, err := parseFieldTags(comments)
+	commentTags, err := p.parseFieldTags(comments)
 	if err != nil {
 		return StructField{}, fmt.Errorf("parse field tags: %w", err)
 	}
@@ -219,7 +227,7 @@ func parseField(fieldNode *ast.Field) (StructField, error) {
 		Primitive: false,
 		Import:    "",
 	}
-	err = fieldTypeInfo.parseFieldType(fieldNode.Type)
+	err = p.parseFieldType(&fieldTypeInfo, fieldNode.Type)
 	if err != nil {
 		return StructField{}, fmt.Errorf("field type: %w", err)
 	}
@@ -268,7 +276,7 @@ type FieldTypeInfo struct {
 	Import    string
 }
 
-func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
+func (p *Parser) parseFieldType(f *FieldTypeInfo, fieldNode ast.Expr) error {
 	switch node := fieldNode.(type) {
 	// internal primitive/struct
 	case *ast.Ident:
@@ -279,7 +287,7 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 	// array
 	case *ast.ArrayType:
 		f.Types = append(f.Types, FieldTypeArray{})
-		err := f.parseFieldType(node.Elt)
+		err := p.parseFieldType(f, node.Elt)
 		if err != nil {
 			return fmt.Errorf("array: %w", err)
 		}
@@ -294,7 +302,7 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 			}
 		}
 
-		err := f.parseFieldType(node.Value)
+		err := p.parseFieldType(f, node.Value)
 		if err != nil {
 			return fmt.Errorf("map field: %w", err)
 		}
@@ -306,7 +314,7 @@ func (f *FieldTypeInfo) parseFieldType(fieldNode ast.Expr) error {
 				err: fmt.Errorf("pointers not allowed as list/map element"),
 			}
 		}
-		err := f.parseFieldType(node.X)
+		err := p.parseFieldType(f, node.X)
 		if err != nil {
 			return err
 		}
@@ -330,7 +338,7 @@ type FieldTags struct {
 	alias   string
 }
 
-func parseFieldTags(comment string) (FieldTags, error) {
+func (p *Parser) parseFieldTags(comment string) (FieldTags, error) {
 	// default tags
 	tags := FieldTags{
 		alias:   "",
@@ -385,7 +393,7 @@ type TypeTags struct {
 	include bool
 }
 
-func parseTypeTags(comment string) (TypeTags, error) {
+func (p *Parser) parseTypeTags(comment string) (TypeTags, error) {
 	// default tags
 	tags := TypeTags{
 		include: false,
