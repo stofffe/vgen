@@ -8,7 +8,7 @@ type Timer struct {
 }
 
 var TimerPositive = TimerRules{
-	Time: vgen.RulesRequired[int](
+	Time: vgen.RulesRequired(
 		vgen.Gte(0),
 	),
 }

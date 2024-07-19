@@ -47,17 +47,17 @@ func main() {
 	}
 
 	resultRules := ResultRules{
-		score: vgen.RulesRequired[string](
+		score: vgen.RulesRequired(
 			vgen.OneOf(A, B, C, D, E),
 		),
 	}
 
 	testRules := TestRules{
-		bestResult: vgen.RulesOptional[ResultVgen](
+		bestResult: vgen.RulesOptional(
 			resultRules,
 		),
-		allResults: vgen.RulesOptional[[]ResultVgen](
-			vgen.List[ResultVgen](
+		allResults: vgen.RulesOptional(
+			vgen.List(
 				resultRules,
 			),
 		),

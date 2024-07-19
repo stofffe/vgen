@@ -36,10 +36,10 @@ func main() {
 	}
 
 	rules := ImportRules{
-		clock: vgen.RulesRequired[timer.Clock](
+		clock: vgen.RulesRequired(
 			ClockIsZero(),
 		),
-		timer: vgen.RulesRequired[timer.TimerVgen](
+		timer: vgen.RulesRequired(
 			vgen.Nested(timer.TimerPositive),
 		),
 	}

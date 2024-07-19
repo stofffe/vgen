@@ -24,18 +24,18 @@ func main() {
 	}
 
 	rules := ArrayRules{
-		vector: vgen.RulesOptional[[]int](
+		vector: vgen.RulesOptional(
 			vgen.LenEq[[]int](3),
-			vgen.List[int](
+			vgen.List(
 				vgen.Gt(0),
 				vgen.Lte(10),
 			),
 		),
-		matrix: vgen.RulesOptional[[][]int](
+		matrix: vgen.RulesOptional(
 			vgen.LenEq[[][]int](3),
-			vgen.List[[]int](
+			vgen.List(
 				vgen.LenEq[[]int](3),
-				vgen.List[int](
+				vgen.List(
 					vgen.Gt(0),
 					vgen.Lte(10),
 				),

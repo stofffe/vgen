@@ -1,6 +1,6 @@
 module github.com/stofffe/vgen
 
-go 1.18
+go 1.22.1
 
 require github.com/spf13/cobra v1.8.1
 

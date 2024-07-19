@@ -6,9 +6,8 @@ import (
 	"go/parser"
 	"go/token"
 	"regexp"
+	"slices"
 	"strings"
-
-	"github.com/stofffe/vgen/internal/utils"
 )
 
 const includeTag = "vgen"
@@ -122,7 +121,7 @@ func parseFile(path string) (ParseInfo, error) {
 			name = spec.Name.Name
 		}
 
-		if utils.Contains(p.foundImports, name) {
+		if slices.Contains(p.foundImports, name) {
 			imports[name] = path
 		}
 	}
