@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const suffix = ".vgen.go"
+const SUFFIX = ".vgen.go"
 
 func CreateCommands() {
 	// root
@@ -61,15 +61,18 @@ func clean(args []string, verbose bool) {
 	infos := []InfoMessage{}
 	paths := []string{}
 
+	isVgenfile := func(name string) bool {
+		return strings.HasSuffix(name, SUFFIX)
+	}
+
 	// get files to be removed
 	for _, path := range args {
-		path := path
 		pathInfo, err := os.Stat(path)
 		if err != nil {
 			errors = append(errors, ErrorMessage{
 				path: path,
 				err: DetailedError{
-					msg: "could not open file",
+					msg: "could not find file",
 					err: fmt.Errorf("open file info for %s", path),
 				},
 			})
@@ -77,7 +80,17 @@ func clean(args []string, verbose bool) {
 		}
 
 		if !pathInfo.IsDir() {
-			paths = append(paths, path)
+			if isVgenfile(path) {
+				paths = append(paths, path)
+			} else {
+				errors = append(errors, ErrorMessage{
+					path: path,
+					err: DetailedError{
+						msg: "trying to clean non vgen file",
+						err: fmt.Errorf("clean on non vgen file"),
+					},
+				})
+			}
 			continue
 		}
 
@@ -98,7 +111,7 @@ func clean(args []string, verbose bool) {
 			}
 
 			// add vgen files
-			if strings.HasSuffix(info.Name(), suffix) {
+			if isVgenfile(info.Name()) {
 				paths = append(paths, current_path)
 			}
 
@@ -108,13 +121,12 @@ func clean(args []string, verbose bool) {
 
 	if len(paths) == 0 {
 		warnings = append(warnings, WarningMessage{
-			msg: "no files found",
+			msg: "no files removed",
 		})
 	}
 
 	// remove files
 	for _, path := range paths {
-		path := path
 		err := os.Remove(path)
 		if err != nil {
 			errors = append(errors, ErrorMessage{
@@ -184,7 +196,7 @@ func generate(args []string, verbose bool) {
 			}
 
 			// skip generated files
-			if strings.HasSuffix(info.Name(), suffix) {
+			if strings.HasSuffix(info.Name(), SUFFIX) {
 				return nil
 			}
 
@@ -272,7 +284,7 @@ func handleFile(path string) (int, error) {
 	}
 
 	// write new file
-	fileName := strings.Replace(path, ".go", suffix, 1)
+	fileName := strings.Replace(path, ".go", SUFFIX, 1)
 	file, err := os.Create(fileName)
 	if err != nil {
 		return 0, fmt.Errorf("create file: %w", err)
