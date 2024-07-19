@@ -146,6 +146,11 @@ vgen includes a lot of default rules, here is the currently implemented rules
 | OneOf | In list of elements |
 | NotOneOf | Not in list of elements |
 | Regex | Regex match |
+| UUIDv1 | UUID version 1 |
+| UUIDv3 | UUID version 3 |
+| UUIDv4 | UUID version 4 |
+| UUIDv5 | UUID version 5 |
+| Ascii | All characters are ascii |
 | MapHasKey | Map has key |
 | Nested | Validate nested vgen type |
 | List | Validate each element of list |

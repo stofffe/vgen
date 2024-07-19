@@ -313,3 +313,30 @@ func Regex(regex *regexp.Regexp) RuleFunc[string] {
 		return errors
 	}
 }
+
+// UUID version 1
+func UUIDv1() RuleFunc[string] {
+	return Regex(regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`))
+}
+
+// UUID version 3
+func UUIDv3() RuleFunc[string] {
+	return Regex(regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$`))
+}
+
+// UUID version 4
+func UUIDv4() RuleFunc[string] {
+	return Regex(regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`))
+
+}
+
+// UUID version 5
+func UUIDv5() RuleFunc[string] {
+	return Regex(regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`))
+
+}
+
+// All characters are ascii
+func Ascii() RuleFunc[string] {
+	return Regex(regexp.MustCompile(`^[\x00-\x7F]*$`))
+}
