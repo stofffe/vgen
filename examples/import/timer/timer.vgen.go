@@ -36,3 +36,33 @@ func (v TimerVgen) ValidatedConvert(rules TimerRules) (Timer, vgen.ErrorMap) {
 	}
 	return v.Convert(), errors
 }
+type ClockVgen struct {
+	Time *int
+}
+func (v ClockVgen) Validate(rules ClockRules) vgen.ErrorMap {
+	var errors vgen.ErrorMap
+	errors.AddErrors(rules.Time.Validate("Time", v.Time))
+	return errors
+}
+func (rules ClockRules) Validate(prefix string, input ClockVgen) vgen.ErrorMap {
+	var errors vgen.ErrorMap
+	errors.AddErrors(rules.Time.Validate(prefix+".Time", input.Time))
+	return errors
+}
+type ClockRules struct {
+	Time vgen.Rules[int]
+}
+func (v ClockVgen) Convert() Clock {
+	var res Clock
+	if v.Time != nil {
+		res.Time = *v.Time
+	}
+	return res
+}
+func (v ClockVgen) ValidatedConvert(rules ClockRules) (Clock, vgen.ErrorMap) {
+	errors := v.Validate(rules)
+	if errors != nil {
+		return Clock{}, errors
+	}
+	return v.Convert(), errors
+}

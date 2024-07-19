@@ -177,19 +177,13 @@ func (p *Parser) parseField(fieldNode *ast.Field) (StructField, error) {
 	}
 
 	// parse field types
-	fieldTypeInfo := FieldTypeInfo{
-		Types:     []FieldType{},
-		Pointer:   false,
-		Primitive: false,
-		Import:    "",
-	}
-	err = p.parseFieldType(&fieldTypeInfo, fieldNode.Type)
+	fieldInfo, err := p.parseFieldType(fieldNode.Type)
 	if err != nil {
 		return StructField{}, fmt.Errorf("field type: %w", err)
 	}
 
 	// dont allow nested on primitve types
-	if nested && fieldTypeInfo.Primitive {
+	if nested && fieldInfo.Primitive {
 		return StructField{}, DetailedError{
 			msg: "primitve fields can not have nested tag",
 			err: fmt.Errorf("nested not allowed on primitve inner type"),
@@ -202,9 +196,9 @@ func (p *Parser) parseField(fieldNode *ast.Field) (StructField, error) {
 		Alias:  alias,
 		Nested: nested,
 
-		Types:   fieldTypeInfo.Types,
-		Pointer: fieldTypeInfo.Pointer,
-		Import:  fieldTypeInfo.Import,
+		Types:   fieldInfo.Types,
+		Pointer: fieldInfo.Pointer,
+		Import:  fieldInfo.Import,
 	}, nil
 }
 
@@ -232,62 +226,62 @@ type FieldTypeInfo struct {
 	Import    string
 }
 
-func (p *Parser) parseFieldType(f *FieldTypeInfo, fieldNode ast.Expr) error {
-	switch node := fieldNode.(type) {
-	// internal primitive/struct
-	case *ast.Ident:
-		if node.Obj == nil {
-			f.Primitive = true
-		}
-		f.Types = append(f.Types, FieldTypeIdent{name: node.Name})
-	// array
-	case *ast.ArrayType:
-		f.Types = append(f.Types, FieldTypeArray{})
-		err := p.parseFieldType(f, node.Elt)
-		if err != nil {
-			return fmt.Errorf("array: %w", err)
-		}
-	// map
-	case *ast.MapType:
-		f.Types = append(f.Types, FieldTypeMap{})
-		key, ok := node.Key.(*ast.Ident)
-		if !ok || key.Name != "string" {
-			return DetailedError{
-				msg: "key of map must be a string",
-				err: fmt.Errorf("invalid map key %v, must be string", key),
-			}
-		}
-
-		err := p.parseFieldType(f, node.Value)
-		if err != nil {
-			return fmt.Errorf("map field: %w", err)
-		}
-	// pointer
-	case *ast.StarExpr:
-		if len(f.Types) > 0 {
-			return DetailedError{
-				msg: "pointers not allowed as list/map element",
-				err: fmt.Errorf("pointers not allowed as list/map element"),
-			}
-		}
-		err := p.parseFieldType(f, node.X)
-		if err != nil {
-			return err
-		}
-		f.Pointer = true
-	// import
-	case *ast.SelectorExpr:
-		imp, ok := node.X.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("import selector is not ast.Ident")
-		}
-		p.foundImports = append(p.foundImports, imp.Name)
-		f.Import = imp.Name
-		f.Types = append(f.Types, FieldTypeImport{imp: imp.Name, name: node.Sel.Name})
-	default:
-		return fmt.Errorf("unknown field type %T", fieldNode)
+func (p *Parser) parseFieldType(node ast.Expr) (FieldTypeInfo, error) {
+	info := FieldTypeInfo{
+		Types:     []FieldType{},
+		Pointer:   false,
+		Primitive: false,
+		Import:    "",
 	}
-	return nil
+	currentNode := node
+	for {
+		switch node := currentNode.(type) {
+		// internal primitive/struct
+		case *ast.Ident:
+			if node.Obj == nil {
+				info.Primitive = true
+			}
+			info.Types = append(info.Types, FieldTypeIdent{name: node.Name})
+			return info, nil
+		// import
+		case *ast.SelectorExpr:
+			imp, ok := node.X.(*ast.Ident)
+			if !ok {
+				return FieldTypeInfo{}, fmt.Errorf("import selector is not ast.Ident")
+			}
+			p.foundImports = append(p.foundImports, imp.Name)
+			info.Import = imp.Name
+			info.Types = append(info.Types, FieldTypeImport{imp: imp.Name, name: node.Sel.Name})
+			return info, nil
+		// array
+		case *ast.ArrayType:
+			info.Types = append(info.Types, FieldTypeArray{})
+			currentNode = node.Elt
+		// map
+		case *ast.MapType:
+			info.Types = append(info.Types, FieldTypeMap{})
+			key, ok := node.Key.(*ast.Ident)
+			if !ok || key.Name != "string" {
+				return FieldTypeInfo{}, DetailedError{
+					msg: "key of map must be a string",
+					err: fmt.Errorf("invalid map key %v, must be string", key),
+				}
+			}
+			currentNode = node.Value
+		// pointer
+		case *ast.StarExpr:
+			if len(info.Types) > 0 {
+				return FieldTypeInfo{}, DetailedError{
+					msg: "pointers not allowed as list/map element",
+					err: fmt.Errorf("pointers not allowed as list/map element"),
+				}
+			}
+			info.Pointer = true
+			currentNode = node.X
+		default:
+			return FieldTypeInfo{}, fmt.Errorf("unknown field type %T", node)
+		}
+	}
 }
 
 type FieldTags struct {
