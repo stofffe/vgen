@@ -133,22 +133,23 @@ vgen includes a lot of default rules, here is the currently implemented rules
 
 | Rule | Description |
 |-|-|
-| Nested | Validate nested vgen types |
+| Eq | Equality |
+| Gt | Greater than |
+| Gte | Greater than or equal to |
+| Lt | Less than |
+| Lte | Less than or equal to |
+| LenEq | Len equality |
+| LenGt | Len greater than |
+| LenGte | Len greater than or equal to |
+| LenLt | Len less than |
+| LenLte | Len less than or equal to |
+| OneOf | In list of elements |
+| NotOneOf | Not in list of elements |
+| Regex | Regex match |
+| MapHasKey | Map has key |
+| Nested | Validate nested vgen type |
 | List | Validate each element of list |
 | MapValue | Validate each value element of map |
-| MapHasKey | Validate map has key |
-| Eq | Validate equality |
-| Gt | Validate greater than |
-| Gte | Validate greater than or equal to |
-| Lt | Validate less than |
-| Lte | Validate less than or equal to |
-| LenEq | Validate len equality |
-| LenGt | Validate len greater than |
-| LenGte | Validate len greater than or equal to |
-| LenLt | Validate len less than |
-| LenLte | Validate len less than or equal to |
-| OneOf | Validate in list of elements |
-| NotOneOf | Validate not in list of elements |
-| Deref | Validate inner value of pointer |
+| Deref | Validate Inner value of pointer |
 | PrefixMessage | Prefix error message |
 | CustomMessage | Replace error with custom message |

@@ -3,6 +3,7 @@ package vgen
 import (
 	"cmp"
 	"fmt"
+	"regexp"
 	"slices"
 )
 
@@ -297,6 +298,17 @@ func NotOneOf[T comparable](values ...T) RuleFunc[T] {
 		var errors ErrorMap
 		if slices.Contains(values, input) {
 			errors.AddError(key, fmt.Errorf("must not be one of %v", values))
+		}
+		return errors
+	}
+}
+
+// Matches regex
+func Regex(regex *regexp.Regexp) RuleFunc[string] {
+	return func(key, input string) ErrorMap {
+		var errors ErrorMap
+		if !regex.Match([]byte(input)) {
+			errors.AddError(key, fmt.Errorf("must match regex %v", regex))
 		}
 		return errors
 	}
