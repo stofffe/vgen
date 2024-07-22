@@ -16,17 +16,18 @@ type Person struct {
 
 func main() {
 	age := 12
+	name := ""
 	person := PersonVgen{
-		name:     nil,
+		name:     &name,
 		nickname: nil,
 		age:      &age,
 	}
 
 	rules := PersonRules{
 		name: vgen.RulesRequired(
-			vgen.Eq("bob"),
+			vgen.StringNotEmpty(),
 		),
-		nickname: vgen.RulesOptional(
+		nickname: vgen.RulesRequired(
 			vgen.Eq("bobby"),
 		),
 		age: vgen.RulesOptional(

@@ -25,16 +25,16 @@ func main() {
 
 	rules := ArrayRules{
 		vector: vgen.RulesOptional(
-			vgen.LenEq[[]int](3),
+			vgen.ListLenEq[[]int](3),
 			vgen.List(
 				vgen.Gt(0),
 				vgen.Lte(10),
 			),
 		),
 		matrix: vgen.RulesOptional(
-			vgen.LenEq[[][]int](3),
+			vgen.ListLenEq[[][]int](3),
 			vgen.List(
-				vgen.LenEq[[]int](3),
+				vgen.ListLenEq[[]int](3),
 				vgen.List(
 					vgen.Gt(0),
 					vgen.Lte(10),

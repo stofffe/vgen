@@ -34,7 +34,7 @@ func main() {
 
 	rules := VectorRules{
 		vector: vgen.RulesOptional(
-			vgen.LenEq[[]float32](3),
+			vgen.ListLenEq[[]float32](3),
 			Normalized(),
 		),
 	}
