@@ -42,6 +42,8 @@ type PersonRules struct { ... }
 func (v PersonVgen) Validate(rules PersonRules) ErrorMap { ... }
 func (v PersonVgen) Convert() Person { ... }
 func (v PersonVgen) ValidatedConvert() (Person, ErrorMap) { ... }
+
+...
 ```
 
 Use type safe validation
@@ -138,19 +140,8 @@ vgen includes a lot of default rules, here is the currently implemented rules
 | Gte | Greater than or equal to |
 | Lt | Less than |
 | Lte | Less than or equal to |
-| LenEq | Len equality |
-| LenGt | Len greater than |
-| LenGte | Len greater than or equal to |
-| LenLt | Len less than |
-| LenLte | Len less than or equal to |
 | OneOf | In list of elements |
 | NotOneOf | Not in list of elements |
-| Regex | Regex match |
-| UUIDv1 | UUID version 1 |
-| UUIDv3 | UUID version 3 |
-| UUIDv4 | UUID version 4 |
-| UUIDv5 | UUID version 5 |
-| Ascii | All characters are ascii |
 | MapHasKey | Map has key |
 | Nested | Validate nested vgen type |
 | List | Validate each element of list |
@@ -158,3 +149,24 @@ vgen includes a lot of default rules, here is the currently implemented rules
 | Deref | Validate Inner value of pointer |
 | PrefixMessage | Prefix error message |
 | CustomMessage | Replace error with custom message |
+| Regex | Regex match |
+| Ascii | All characters are ascii |
+| UUIDv1 | UUID version 1 |
+| UUIDv3 | UUID version 3 |
+| UUIDv4 | UUID version 4 |
+| UUIDv5 | UUID version 5 |
+| ListLenEq | List len equality |
+| ListLenGt | List len greater than |
+| ListLenGte | List len greater than or equal to |
+| ListLenLt | List len less than |
+| ListLenLte | List len less than or equal to |
+| MapLenEq | Map len equality |
+| MapLenGt | Map len greater than |
+| MapLenGte | Map len greater than or equal to |
+| MapLenLt | Map len less than |
+| MapLenLte | Map len less than or equal to |
+| StringLenEq | String len equality |
+| StringLenGt | String len greater than |
+| StringLenGte | String len greater than or equal to |
+| StringLenLt | String len less than |
+| StringLenLte | String len less than or equal to |
