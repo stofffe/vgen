@@ -14,9 +14,9 @@ func (v TimerVgen) Validate(rules TimerRules) vgen.ErrorMap {
 	errors.AddErrors(rules.Time.Validate("Time", v.Time))
 	return errors
 }
-func (rules TimerRules) Validate(prefix string, input TimerVgen) vgen.ErrorMap {
+func (r TimerRules) Validate(prefix string, input TimerVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.Time.Validate(prefix+".Time", input.Time))
+	errors.AddErrors(r.Time.Validate(prefix+".Time", input.Time))
 	return errors
 }
 type TimerRules struct {
@@ -35,4 +35,9 @@ func (v TimerVgen) ValidatedConvert(rules TimerRules) (Timer, vgen.ErrorMap) {
 		return Timer{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r TimerRules) Extend(rules TimerRules) TimerRules {
+	r.Time.Rules = append(r.Time.Rules, rules.Time.Rules...)
+	r.Time.Required = r.Time.Required || rules.Time.Required
+	return r
 }

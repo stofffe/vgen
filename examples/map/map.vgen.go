@@ -14,9 +14,9 @@ func (v CharacterVgen) Validate(rules CharacterRules) vgen.ErrorMap {
 	errors.AddErrors(rules.stats.Validate("stats", v.stats))
 	return errors
 }
-func (rules CharacterRules) Validate(prefix string, input CharacterVgen) vgen.ErrorMap {
+func (r CharacterRules) Validate(prefix string, input CharacterVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.stats.Validate(prefix+".stats", input.stats))
+	errors.AddErrors(r.stats.Validate(prefix+".stats", input.stats))
 	return errors
 }
 type CharacterRules struct {
@@ -35,4 +35,9 @@ func (v CharacterVgen) ValidatedConvert(rules CharacterRules) (Character, vgen.E
 		return Character{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r CharacterRules) Extend(rules CharacterRules) CharacterRules {
+	r.stats.Rules = append(r.stats.Rules, rules.stats.Rules...)
+	r.stats.Required = r.stats.Required || rules.stats.Required
+	return r
 }

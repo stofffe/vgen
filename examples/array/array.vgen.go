@@ -16,10 +16,10 @@ func (v ArrayVgen) Validate(rules ArrayRules) vgen.ErrorMap {
 	errors.AddErrors(rules.matrix.Validate("matrix", v.matrix))
 	return errors
 }
-func (rules ArrayRules) Validate(prefix string, input ArrayVgen) vgen.ErrorMap {
+func (r ArrayRules) Validate(prefix string, input ArrayVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
-	errors.AddErrors(rules.matrix.Validate(prefix+".matrix", input.matrix))
+	errors.AddErrors(r.vector.Validate(prefix+".vector", input.vector))
+	errors.AddErrors(r.matrix.Validate(prefix+".matrix", input.matrix))
 	return errors
 }
 type ArrayRules struct {
@@ -42,4 +42,11 @@ func (v ArrayVgen) ValidatedConvert(rules ArrayRules) (Array, vgen.ErrorMap) {
 		return Array{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r ArrayRules) Extend(rules ArrayRules) ArrayRules {
+	r.vector.Rules = append(r.vector.Rules, rules.vector.Rules...)
+	r.vector.Required = r.vector.Required || rules.vector.Required
+	r.matrix.Rules = append(r.matrix.Rules, rules.matrix.Rules...)
+	r.matrix.Required = r.matrix.Required || rules.matrix.Required
+	return r
 }

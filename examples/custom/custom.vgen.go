@@ -14,9 +14,9 @@ func (v VectorVgen) Validate(rules VectorRules) vgen.ErrorMap {
 	errors.AddErrors(rules.vector.Validate("vector", v.vector))
 	return errors
 }
-func (rules VectorRules) Validate(prefix string, input VectorVgen) vgen.ErrorMap {
+func (r VectorRules) Validate(prefix string, input VectorVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.vector.Validate(prefix+".vector", input.vector))
+	errors.AddErrors(r.vector.Validate(prefix+".vector", input.vector))
 	return errors
 }
 type VectorRules struct {
@@ -35,4 +35,9 @@ func (v VectorVgen) ValidatedConvert(rules VectorRules) (Vector, vgen.ErrorMap) 
 		return Vector{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r VectorRules) Extend(rules VectorRules) VectorRules {
+	r.vector.Rules = append(r.vector.Rules, rules.vector.Rules...)
+	r.vector.Required = r.vector.Required || rules.vector.Required
+	return r
 }

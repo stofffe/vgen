@@ -16,10 +16,10 @@ func (v PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
 	errors.AddErrors(rules.Nickname.Validate("nickname", v.Nickname))
 	return errors
 }
-func (rules PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
+func (r PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.Name.Validate(prefix+".name", input.Name))
-	errors.AddErrors(rules.Nickname.Validate(prefix+".nickname", input.Nickname))
+	errors.AddErrors(r.Name.Validate(prefix+".name", input.Name))
+	errors.AddErrors(r.Nickname.Validate(prefix+".nickname", input.Nickname))
 	return errors
 }
 type PersonRules struct {
@@ -42,4 +42,11 @@ func (v PersonVgen) ValidatedConvert(rules PersonRules) (Person, vgen.ErrorMap) 
 		return Person{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r PersonRules) Extend(rules PersonRules) PersonRules {
+	r.Name.Rules = append(r.Name.Rules, rules.Name.Rules...)
+	r.Name.Required = r.Name.Required || rules.Name.Required
+	r.Nickname.Rules = append(r.Nickname.Rules, rules.Nickname.Rules...)
+	r.Nickname.Required = r.Nickname.Required || rules.Nickname.Required
+	return r
 }

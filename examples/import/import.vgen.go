@@ -17,10 +17,10 @@ func (v ImportVgen) Validate(rules ImportRules) vgen.ErrorMap {
 	errors.AddErrors(rules.timer.Validate("timer", v.timer))
 	return errors
 }
-func (rules ImportRules) Validate(prefix string, input ImportVgen) vgen.ErrorMap {
+func (r ImportRules) Validate(prefix string, input ImportVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.clock.Validate(prefix+".clock", input.clock))
-	errors.AddErrors(rules.timer.Validate(prefix+".timer", input.timer))
+	errors.AddErrors(r.clock.Validate(prefix+".clock", input.clock))
+	errors.AddErrors(r.timer.Validate(prefix+".timer", input.timer))
 	return errors
 }
 type ImportRules struct {
@@ -43,4 +43,11 @@ func (v ImportVgen) ValidatedConvert(rules ImportRules) (Import, vgen.ErrorMap) 
 		return Import{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r ImportRules) Extend(rules ImportRules) ImportRules {
+	r.clock.Rules = append(r.clock.Rules, rules.clock.Rules...)
+	r.clock.Required = r.clock.Required || rules.clock.Required
+	r.timer.Rules = append(r.timer.Rules, rules.timer.Rules...)
+	r.timer.Required = r.timer.Required || rules.timer.Required
+	return r
 }

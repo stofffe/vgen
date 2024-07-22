@@ -18,11 +18,11 @@ func (v PersonVgen) Validate(rules PersonRules) vgen.ErrorMap {
 	errors.AddErrors(rules.age.Validate("age", v.age))
 	return errors
 }
-func (rules PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
+func (r PersonRules) Validate(prefix string, input PersonVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.name.Validate(prefix+".name", input.name))
-	errors.AddErrors(rules.nickname.Validate(prefix+".nickname", input.nickname))
-	errors.AddErrors(rules.age.Validate(prefix+".age", input.age))
+	errors.AddErrors(r.name.Validate(prefix+".name", input.name))
+	errors.AddErrors(r.nickname.Validate(prefix+".nickname", input.nickname))
+	errors.AddErrors(r.age.Validate(prefix+".age", input.age))
 	return errors
 }
 type PersonRules struct {
@@ -49,4 +49,13 @@ func (v PersonVgen) ValidatedConvert(rules PersonRules) (Person, vgen.ErrorMap) 
 		return Person{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r PersonRules) Extend(rules PersonRules) PersonRules {
+	r.name.Rules = append(r.name.Rules, rules.name.Rules...)
+	r.name.Required = r.name.Required || rules.name.Required
+	r.nickname.Rules = append(r.nickname.Rules, rules.nickname.Rules...)
+	r.nickname.Required = r.nickname.Required || rules.nickname.Required
+	r.age.Rules = append(r.age.Rules, rules.age.Rules...)
+	r.age.Required = r.age.Required || rules.age.Required
+	return r
 }

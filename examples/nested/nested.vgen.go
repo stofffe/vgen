@@ -16,10 +16,10 @@ func (v TestVgen) Validate(rules TestRules) vgen.ErrorMap {
 	errors.AddErrors(rules.allResults.Validate("allResults", v.allResults))
 	return errors
 }
-func (rules TestRules) Validate(prefix string, input TestVgen) vgen.ErrorMap {
+func (r TestRules) Validate(prefix string, input TestVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.bestResult.Validate(prefix+".bestResult", input.bestResult))
-	errors.AddErrors(rules.allResults.Validate(prefix+".allResults", input.allResults))
+	errors.AddErrors(r.bestResult.Validate(prefix+".bestResult", input.bestResult))
+	errors.AddErrors(r.allResults.Validate(prefix+".allResults", input.allResults))
 	return errors
 }
 type TestRules struct {
@@ -47,6 +47,13 @@ func (v TestVgen) ValidatedConvert(rules TestRules) (Test, vgen.ErrorMap) {
 	}
 	return v.Convert(), errors
 }
+func (r TestRules) Extend(rules TestRules) TestRules {
+	r.bestResult.Rules = append(r.bestResult.Rules, rules.bestResult.Rules...)
+	r.bestResult.Required = r.bestResult.Required || rules.bestResult.Required
+	r.allResults.Rules = append(r.allResults.Rules, rules.allResults.Rules...)
+	r.allResults.Required = r.allResults.Required || rules.allResults.Required
+	return r
+}
 type ResultVgen struct {
 	score *string
 }
@@ -55,9 +62,9 @@ func (v ResultVgen) Validate(rules ResultRules) vgen.ErrorMap {
 	errors.AddErrors(rules.score.Validate("score", v.score))
 	return errors
 }
-func (rules ResultRules) Validate(prefix string, input ResultVgen) vgen.ErrorMap {
+func (r ResultRules) Validate(prefix string, input ResultVgen) vgen.ErrorMap {
 	var errors vgen.ErrorMap
-	errors.AddErrors(rules.score.Validate(prefix+".score", input.score))
+	errors.AddErrors(r.score.Validate(prefix+".score", input.score))
 	return errors
 }
 type ResultRules struct {
@@ -76,4 +83,9 @@ func (v ResultVgen) ValidatedConvert(rules ResultRules) (Result, vgen.ErrorMap) 
 		return Result{}, errors
 	}
 	return v.Convert(), errors
+}
+func (r ResultRules) Extend(rules ResultRules) ResultRules {
+	r.score.Rules = append(r.score.Rules, rules.score.Rules...)
+	r.score.Required = r.score.Required || rules.score.Required
+	return r
 }
