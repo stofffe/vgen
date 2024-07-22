@@ -78,6 +78,13 @@ func generateFile(info ParseInfo) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("execute template validatedConvert: %v", err)
 		}
+
+		// extend rules
+		err = tmpl.ExecuteTemplate(&buffer, "extendRules", structType)
+		if err != nil {
+			return nil, fmt.Errorf("execute template extendRules: %v", err)
+		}
+
 	}
 
 	bytes := buffer.Bytes()

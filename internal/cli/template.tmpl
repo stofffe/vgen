@@ -44,10 +44,10 @@
         {{ end }}
         return errors
     }
-    func (rules {{ .Name }}Rules) Validate(prefix string, input {{ .Name }}Vgen) vgen.ErrorMap {
+    func (r {{ .Name }}Rules) Validate(prefix string, input {{ .Name }}Vgen) vgen.ErrorMap {
         var errors vgen.ErrorMap
         {{ range .Fields }}
-            errors.AddErrors(rules.{{ .Name }}.Validate(prefix+".{{ .Alias }}", input.{{ .Name }}))
+            errors.AddErrors(r.{{ .Name }}.Validate(prefix+".{{ .Alias }}", input.{{ .Name }}))
         {{ end }}
         return errors
     }
@@ -92,5 +92,15 @@
             return {{ .Name }}{}, errors
         }
         return v.Convert(), errors
+    }
+{{ end }}
+
+{{ define "extendRules"}}
+    func (r {{ .Name }}Rules) Extend(rules {{ .Name }}Rules) {{ .Name }}Rules {
+        {{ range .Fields}}
+            r.{{ .Name }}.Rules = append(r.{{ .Name }}.Rules, rules.{{ .Name }}.Rules...)
+            r.{{ .Name }}.Required = r.{{ .Name }}.Required || rules.{{ .Name }}.Required
+        {{ end }}
+        return r
     }
 {{ end }}
